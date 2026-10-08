@@ -1,0 +1,9 @@
+{
+  "description": "Agent on Browser: keep the board honest. session-start = one line when a session opens: the board's address, or, once per project that has no board, how to make one; prompt = hand Claude the board and the protocol; after-tool = rebuild on a record edit, receipt on a publish, and a reminder when a card in progress goes quiet or logged lines were not sent (it runs after shell commands and builder agents too, because that is where most work happens); stop = one nudge per turn when work or cards are unaccounted for. The code is found through CLAUDE_PLUGIN_ROOT; the project through CLAUDE_PROJECT_DIR.",
+  "hooks": {
+    "SessionStart": [{ "matcher": "startup", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/src/hooks/session-start.mjs\"", "timeout": 15 }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/src/hooks/prompt.mjs\"", "timeout": 30 }] }],
+    "PostToolUse": [{ "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell|Agent|Task|Artifact|ArtifactData", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/src/hooks/after-tool.mjs\"", "timeout": 30 }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/src/hooks/stop.mjs\"", "timeout": 30 }] }]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "browser-agent",
+  "description": "Agent on Browser: one plugin, a browser cockpit for any Claude Code project.",
+  "owner": {
+    "name": "Syed Abbas Shaheer"
+  },
+  "plugins": [
+    {
+      "name": "browser-agent",
+      "source": "./plugin",
+      "description": "A browser cockpit for your project: a live board built from a markdown record, kept honest by hooks, and steerable from the browser.",
+      "version": "0.0.6",
+      "author": {
+        "name": "Syed Abbas Shaheer",
+        "url": "https://github.com/syedabbasshaheer-art"
+      },
+      "license": "MIT",
+      "keywords": [
+        "kanban",
+        "board",
+        "cockpit",
+        "project-management",
+        "hooks",
+        "artifact"
+      ]
+    }
+  ]
+}

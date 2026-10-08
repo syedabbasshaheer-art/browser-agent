@@ -1,0 +1,3 @@
+# The parser and the card lint expect LF. Windows checkouts otherwise turn every line into CRLF.
+* text=auto eol=lf
+*.png binary

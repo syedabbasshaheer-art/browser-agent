@@ -1,0 +1,15 @@
+{
+  "name": "browser-agent",
+  "version": "0.0.6",
+  "description": "Agent on Browser: see your project as a board in your browser, and steer your AI agent from it. A plugin for Claude Code.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/replies.test.mjs test/idle.test.mjs test/timer.test.mjs test/suggest.test.mjs test/quiet.test.mjs test/views.test.mjs test/gate.test.mjs test/cockpit.test.mjs test/adapters.test.mjs test/harness-free.test.mjs test/silent.test.mjs test/feed.test.mjs test/lint.test.mjs test/draft.test.mjs test/live.test.mjs test/auto.test.mjs test/pulse.test.mjs test/findings.test.mjs test/qa/audit-defects.test.mjs test/qa/build.test.mjs test/qa/core-pure.test.mjs test/qa/gateway-refusals.test.mjs test/qa/harness-free-strict.test.mjs test/answer.test.mjs test/next-replies.test.mjs test/qa/hooks-seam.test.mjs test/qa/inbox-seam.test.mjs",
+    "cli": "node plugin/src/cli/cockpit.mjs",
+    "verbs": "node plugin/src/cli/cockpit.mjs verbs"
+  }
+}

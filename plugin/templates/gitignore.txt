@@ -1,0 +1,3 @@
+# Agent on Browser: built page and local state (the local state holds your prompts)
+.claude/local/
+.claude/board.html

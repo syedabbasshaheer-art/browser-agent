@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/syedabbasshaheer-art/browser-agent/main/templates/config.schema.json",
+  "title": "",
+  "record": ".cockpit/BOARD.md",
+  "artifact": "",
+  "harness": "claude",
+  "plan": "draft",
+  "finish": null,
+  "wip": {
+    "human": 2,
+    "agent": 3
+  },
+  "auto": {
+    "start": false,
+    "inARow": 3,
+    "perDay": 12,
+    "pauseOnQuestion": true,
+    "paused": false,
+    "quietMin": 10,
+    "pulseGapMin": 5,
+    "pulsePerHour": 8,
+    "holdGoals": [],
+    "heartbeat": {
+      "installed": false,
+      "everyMin": 30,
+      "from": "09:00",
+      "to": "22:00",
+      "perDay": 24
+    }
+  }
+}

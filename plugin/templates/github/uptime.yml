@@ -1,0 +1,64 @@
+# Uptime and certificate watch. Copy to .github/workflows/uptime.yml and set HOST.
+#
+# Nothing else watches this site: Vercel's free plan has no alerts, and a failed
+# renewal of the 90-day certificate would take the site down with no warning.
+# This runs from GitHub's machines, not a laptop, so it sees what a visitor sees.
+# A failed scheduled run emails the repo owner (GitHub's default Actions
+# notification). To prove the alert works, run it by hand with "fail on purpose".
+
+name: Uptime watch
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # every 3 hours, off the hour
+  workflow_dispatch:
+    inputs:
+      fail_on_purpose:
+        description: "Fail on purpose, to test that the alert email arrives"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HOST: example.com   # change to your domain
+      MIN_CERT_DAYS: "14"
+    steps:
+      - name: The home page answers 200 and is the real site
+        run: |
+          code=$(curl -s -o page.html -w '%{http_code}' --max-time 30 "https://$HOST/")
+          echo "status $code"
+          test "$code" = "200"
+          grep -qi "<title>" page.html   # change to text only your real page has
+
+      - name: www redirects to the apex with a 308
+        run: |
+          out=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 30 "https://www.$HOST/")
+          echo "$out"
+          case "$out" in "308 https://$HOST/"*) ;; *) echo "www is not a 308 to the apex"; exit 1;; esac
+
+      - name: The certificate has more than MIN_CERT_DAYS left, on both names
+        run: |
+          for name in "$HOST" "www.$HOST"; do
+            end=$(echo | openssl s_client -connect "$name:443" -servername "$name" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+            days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+            echo "$name: certificate ends $end ($days days)"
+            test "$days" -gt "$MIN_CERT_DAYS"
+          done
+
+      - name: Key pages load (edit the list for your site)
+        run: |
+          for p in /; do
+            test "$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "https://$HOST$p")" = "200"
+          done
+
+      - name: Fail on purpose (alert test)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.fail_on_purpose }}
+        run: |
+          echo "Failing on purpose to test the alert. If you got an email about this run, alerts work."
+          exit 1

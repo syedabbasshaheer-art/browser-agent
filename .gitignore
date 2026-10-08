@@ -1,0 +1,5 @@
+# The built page and the local event log of a project that uses the board.
+.claude/local/
+.claude/board.html
+node_modules/
+.DS_Store

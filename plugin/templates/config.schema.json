@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent on Browser project config (.cockpit/config.json)",
+  "description": "Its presence turns the cockpit on for a project; without it the hooks stay silent. Every key is optional. Paths are relative to the project root. This lists exactly what src/build/config.mjs reads; docs/design-config.schema.json is the fuller design it grows towards.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "title": { "type": "string", "default": "Project Cockpit", "description": "The board's title, and the name the hooks use for the project." },
+    "record": { "type": "string", "default": ".cockpit/BOARD.md", "description": "The record: the only truth." },
+    "out": { "type": "string", "default": ".claude/board.html", "description": "The built page. Gitignored." },
+    "local": { "type": "string", "default": ".claude/local", "description": "Runtime state: activity feed, event log, snapshot, publish receipt, per-session files. Gitignored; it holds your prompts." },
+    "artifact": { "type": "string", "default": "", "description": "The published board's claude.ai link. Empty until the first publish; Claude fills it in." },
+    "harness": { "enum": ["claude", "local"], "default": "claude", "description": "Which adapter speaks to the agent (src/adapters/)." },
+    "plan": { "enum": ["draft", "accepted"], "default": "accepted", "description": "draft = the owner has not accepted the plan yet: no card can start or close. init and the plan command set draft; Accept plan on the board sets accepted." },
+    "finish": { "type": ["string", "null"], "default": null, "description": "The card whose dependency tree is the finish path, e.g. \"1.5\". null = no finish path." },
+    "wip": { "type": "object", "properties": { "human": { "type": "integer", "minimum": 0 }, "agent": { "type": "integer", "minimum": 0 } }, "default": { "human": 2, "agent": 3 }, "description": "Cards each owner can run at once." },
+    "auto": {
+      "type": "object",
+      "description": "Automatic work (docs/16-live-feed-contract.md, section 5). A value of the wrong type or out of range falls back to its default and `cockpit status` says so. Only `paused` can be changed from the board.",
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "boolean", "default": true, "description": "The agent may start the next ready agent card that needs no approval (`cockpit next --start`). init writes false: controlled first." },
+        "inARow": { "type": "integer", "minimum": 1, "maximum": 20, "default": 3, "description": "Automatic starts allowed since the owner's last action." },
+        "perDay": { "type": "integer", "minimum": 1, "maximum": 200, "default": 12, "description": "Automatic starts allowed in any 24 hours." },
+        "pauseOnQuestion": { "type": "boolean", "default": true, "description": "No automatic start while a question to the owner is unanswered." },
+        "paused": { "type": "boolean", "default": false, "description": "The owner's switch: Pause automatic work." },
+        "quietMin": { "type": "integer", "minimum": 1, "maximum": 1440, "default": 10 },
+        "pulseGapMin": { "type": "integer", "minimum": 1, "maximum": 1440, "default": 5 },
+        "pulsePerHour": { "type": "integer", "minimum": 0, "maximum": 60, "default": 8 },
+        "heartbeat": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "installed": { "type": "boolean", "default": false, "description": "The owner has turned the session timer on (in an open Claude Code session: /loop 30m /browser-agent heartbeat). Set by hand; nothing writes it, and it starts nothing." },
+            "everyMin": { "type": "integer", "minimum": 5, "maximum": 1440, "default": 30 },
+            "from": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$", "default": "09:00" },
+            "to": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$", "default": "22:00" },
+            "perDay": { "type": "integer", "minimum": 1, "maximum": 288, "default": 24 }
+          }
+        }
+      }
+    },
+    "decisionGoals": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "Overrides the record's Goal column for decision rows, e.g. { \"D1\": 2 }." },
+    "watchGoals": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "Overrides the record's Goal column for watch rows." },
+    "phaseEnd": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Overrides a phase's \"Ends with:\" line from the record." },
+    "tile": { "type": ["object", "null"], "properties": { "label": { "type": "string" }, "row": { "type": "string" } }, "default": null, "description": "An optional sixth tile: a number read from the record's \"Where this stands\" row named `row`." },
+    "hooks": { "type": "object", "properties": { "skip": { "type": "array", "items": { "type": "string" }, "default": [".claude/", ".cockpit/", "node_modules/"] } }, "description": "Paths the Stop hook never counts as unaccounted work." }
+  }
+}
