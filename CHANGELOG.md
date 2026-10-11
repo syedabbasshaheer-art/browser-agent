@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.11
+
+- You decide goal by goal. On the Goals page each goal has Accept and Set aside, and the top has Accept all goals. A goal set aside stays in the plan, none of its cards starts, and it can be brought back. Deciding the last goal accepts the plan.
+- A card can be closed on your own word: Already done, or Not needed. The card says it was your word.
+- Goal 1 arrives first. On a first run the board shows your next step before the agent studies your field and writes the goals that follow.
+- The plan check holds a first draft to what a trial showed: a goal name of eight words or fewer, twenty-four cards at most, later goals of two or three cards, and no card repeated with another number.
+- A newer version announces itself. The session checks a few times a day; the terminal says so once, and the board's Inbox shows "Update ready" with an Update now button, with no rebuild. Pressing it has the agent run the plugin's own update command.
+- The board comes before everything on a first run: the agent no longer runs the plugin's tests or reads its code before the board's link is given.
+- The first plan is smaller and closer: twelve to twenty-four cards, numbers counted from the folder, later goals that are the project's own, and nothing stated about you that the folder does not say.
+- The List is the Goals page, and says what it is: the agent's reading of your project, which you decide on and the agent keeps up to date.
+- In a session with no screen of its own, the board's link is given to you instead of a browser being "opened".
+- In the terminal, a long goal name wraps instead of being cut.
+
 ## 0.0.10
 
 - The first plan is written for your kind of work, code or not. The agent takes an inventory of the folder (videos, documents, designs, data), studies the field, places you on a ladder from what you have made to where it could go, and writes goals that lead up it.

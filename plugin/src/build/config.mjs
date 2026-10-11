@@ -30,6 +30,11 @@ export const PROJECT_CONFIG = J;
 export const PLAN = CONFIG_ERROR || pick("plan", "accepted") === "draft" ? "draft" : "accepted";
 // "planning": true while the first plan is still being written: the page shows a placeholder and says so.
 export const PLANNING = !CONFIG_ERROR && J.planning === true;
+// "goals": { "accepted": [1, 2], "aside": [4] }: the owner's choices on the Goals page. A goal set aside is kept
+// in the plan and none of its cards starts; "accepted" is used only while the plan is a draft.
+export const goalList = (v) => (Array.isArray(v) ? [...new Set(v.filter((n) => Number.isInteger(n) && n > 0 && n < 1000))].sort((a, b) => a - b) : []);
+const GOALS_RAW = J.goals && typeof J.goals === "object" && !Array.isArray(J.goals) ? J.goals : {};
+export const GOALS_ACCEPTED = goalList(GOALS_RAW.accepted), GOALS_ASIDE = goalList(GOALS_RAW.aside);
 // "updates": false turns off the notice that a newer version of the plugin is ready.
 export const UPDATES = J.updates !== false;
 // The owner's prompts are private. Only when this is true does the page's feed carry their words.
@@ -137,7 +142,7 @@ export function readAuto(raw, { broken = "" } = {}) {
 const AUTO_READ = readAuto(J.auto, { broken: CONFIG_ERROR });
 // Why automatic starts were turned off by the reader, or "" when the settings read cleanly.
 export const AUTO_OFF_WHY = AUTO_READ.off || "";
-export const AUTO = AUTO_READ.auto;
+export const AUTO = GOALS_ASIDE.length ? { ...AUTO_READ.auto, holdGoals: [...new Set([...(AUTO_READ.auto.holdGoals || []), ...GOALS_ASIDE])] } : AUTO_READ.auto;
 export const AUTO_PROBLEMS = AUTO_READ.problems;
 
 // A phase is not a label, it is a promise about the end state. The record says it, as an

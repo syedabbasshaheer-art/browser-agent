@@ -206,7 +206,7 @@ test("cockpit events: a named consumer reads what is new, commits, and is then u
   assert.equal(cli(dir, "say", "four").status, 0);
   assert.match(cli(dir, "events", "--consumer", "page").stdout, /^\s+4\s.*claude\.said/);
   const verbs = cli(dir, "verbs").stdout.trim().split("\n");
-  assert.deepEqual(verbs.map((l) => l.split(/\s+/)[0]), ["card.move", "card.note", "card.edit", "card.add", "gate.approve", "task.start", "plan.accept", "release.push", "question.answer", "auto.set", "notes.add", "notes.remove", "message.send"]);
+  assert.deepEqual(verbs.map((l) => l.split(/\s+/)[0]), ["card.move", "card.note", "card.edit", "card.add", "gate.approve", "task.start", "plan.accept", "release.push", "card.close", "goal.set", "plugin.update", "question.answer", "auto.set", "notes.add", "notes.remove", "message.send"]);
   assert.match(verbs.find((l) => l.startsWith("release.push")), /level owner\s+risk high\s+confirm/);
   rm(dir);
 });

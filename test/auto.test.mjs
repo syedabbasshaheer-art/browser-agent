@@ -785,7 +785,7 @@ test("auto.set: through the inbox only `paused` changes; a contributor is refuse
   // Every other verb, carrying every setting it can, changes nothing under "auto".
   const stuffing = { auto: { start: false, inARow: 99 }, start: false, inARow: 99, perDay: 99, paused: true, heartbeat: { installed: true } };
   const sample = { "card.move": { card: "1.2", to: "DOING" }, "card.note": { card: "1.2", text: "x" }, "card.edit": { card: "1.2", title: "T" }, "card.add": { goal: 1, title: "New card", owner: "agent" },
-    "task.start": { card: "1.3" }, "gate.approve": { card: "1.5" }, "plan.accept": {}, "release.push": {}, "question.answer": { card: "1.2", qid: "q1", text: "Yes" },
+    "task.start": { card: "1.3" }, "gate.approve": { card: "1.5" }, "plan.accept": {}, "plugin.update": {}, "release.push": {}, "card.close": { card: "1.2", why: "done" }, "goal.set": { goal: 1, to: "aside" }, "question.answer": { card: "1.2", qid: "q1", text: "Yes" },
     "notes.add": { section: "Preferences", text: "Say Agent" }, "notes.remove": { id: "n1" }, "message.send": { text: "Start card 1.3 next." } };
   assert.deepEqual(Object.keys(VERBS).filter((v) => v !== "auto.set").sort(), Object.keys(sample).sort(), "every verb but auto.set is tried");
   const before = readJSON(P(dir).config).auto;

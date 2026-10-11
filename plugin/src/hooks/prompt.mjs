@@ -11,6 +11,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { COMMAND, WELCOME, WELCOME_CONTEXT, claimWelcome } from "./welcome.mjs";
 import { notesBlock, CAPS, FILES as MEMORY_FILES } from "../core/memory.mjs";
+import { noteUpdate } from "./update-note.mjs";
+import { updateLine } from "../core/update.mjs";
 
 // A project with no board: every hook is silent, with one exception. A plugin installed inside a running session
 // never sees a session start, so the welcome is given on the first message instead, once per project. A message
@@ -42,7 +44,10 @@ guard(async () => {
   // The note tool lives with this code (inside a plugin, the plugin folder), not in the project.
   const note = `node "${fileURLToPath(new URL("../cli/note.mjs", import.meta.url))}"`;
   const protocol = A.instructions.protocol({ title: CFG.TITLE, record: CFG.RECORD, digest: board, url: CFG.ARTIFACT_URL, out: CFG.OUT, note, plan: CFG.PLAN });
-  A.triggers.context("prompt", protocol + ownerNotes());
+  // A newer version heard of during a long session: the board's Inbox gets its line; the agent is told once.
+  const up = await noteUpdate();
+  const upNote = up && up.fresh ? "\n[Update] " + updateLine(up.latest, undefined, up.command) + " The board's Inbox shows it with an Update now button; mention it to the owner once, in one line." : "";
+  A.triggers.context("prompt", protocol + ownerNotes() + upNote);
 });
 
 // The owner's notes (.cockpit/NOTES.md), handed over at the start of every turn: the current lines only,

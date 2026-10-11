@@ -53,3 +53,20 @@ test("lint: the command prints findings and exits 1 only on errors", () => {
   assert.match(broken.stdout, /ERROR  Card 1\.2 has no done-when/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("a first draft is also held to what a trial showed: short goal names, few cards, no card repeated by number", async () => {
+  const { planLint, FIRST } = await import("../plugin/src/core/lint.mjs");
+  const card = (id, g, title, st = "BACKLOG") => ({ id, g, st, own: "agent", deps: "-", title, desc: "It does a thing.", dw: "It is seen to work", pts: ["Why: a reason", "Check: look"], ph: "P" + g });
+  const goals = [1, 2, 3].map((n) => ({ n, title: "Goal " + n, sub: "What is true" }));
+  const base = { goals, phaseEnd: { P1: "x", P2: "x", P3: "x" }, cards: [card("1.1", 1, "Do one"), card("2.1", 2, "Do two"), card("3.1", 3, "Do three")] };
+  assert.deepEqual(planLint(base, { first: true }), [], "a small, plain first plan has no finding");
+  const long = { ...base, goals: [{ ...goals[0], title: "Five Indian dish shorts live on one channel, one a week" }, goals[1], goals[2]] };
+  assert.match(planLint(long, { first: true })[0].text, /Goal 1's name is 11 words: say its end state in 8 or fewer/);
+  assert.deepEqual(planLint(long), [], "an accepted plan is not held to the first-draft rules");
+  const many = { ...base, cards: Array.from({ length: FIRST.cards + 1 }, (_, i) => card("1." + (i + 1), 1, "Do the thing called " + "abcdefghijklmnopqrstuvwxyz"[i])).concat(base.cards.slice(1)) };
+  assert.ok(planLint(many, { first: true }).some((x) => /The plan has 27 cards: a first plan is 24 at most/.test(x.text)));
+  const run = { ...base, cards: [card("1.1", 1, "Write chapters 13 and 14"), card("1.2", 1, "Write chapters 15 and 16"), card("2.1", 2, "Do two"), card("3.1", 3, "Do three")] };
+  assert.ok(planLint(run, { first: true }).some((x) => x.text === "Cards 1.1, 1.2 differ only by a number: make them one card."));
+  const far = { ...base, cards: base.cards.concat(["a", "b", "c", "d"].map((x, i) => card("3." + (i + 2), 3, "Do " + x))) };
+  assert.ok(planLint(far, { first: true }).some((x) => /Goal 3 is far off and has 5 cards/.test(x.text)));
+});

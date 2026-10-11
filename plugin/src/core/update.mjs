@@ -1,4 +1,4 @@
-// Is a newer version of the plugin published? Asked at most once in twenty hours, by a new session, with one
+// Is a newer version of the plugin published? Asked at most once in six hours, by a session's hooks, with one
 // plain GET for the public version file. Nothing about the user or the project is sent. The answer is kept in the
 // plugin's own data folder. It never throws: with no network, no data folder, or the check turned off, the answer
 // is "nothing newer is known".
@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 export const SOURCE = "https://raw.githubusercontent.com/syedabbasshaheer-art/browser-agent/main/plugin/.claude-plugin/plugin.json";
 export const UPDATE_COMMAND = "claude plugin update browser-agent@browser-agent";
-const EVERY_MS = 20 * 60 * 60 * 1000, WAIT_MS = 2500;
+const EVERY_MS = 6 * 60 * 60 * 1000, WAIT_MS = 2500;
 const clean = (v) => (/^\d+\.\d+\.\d+$/.test(String(v || "")) ? String(v) : "");
 
 // The version of the code that is running, from its own manifest.
@@ -44,7 +44,7 @@ export async function latestKnown({ data = "", now = Date.now() } = {}) {
       const r = await fetch(SOURCE, { signal: stop.signal, redirect: "error" });
       clearTimeout(timer);
       if (r.ok) latest = clean((await r.json()).version) || latest;
-    } catch { /* offline: keep what was known, and do not ask again for twenty hours */ }
+    } catch { /* offline: keep what was known, and do not ask again for six hours */ }
     fs.mkdirSync(data, { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ checkedAt: new Date(now).toISOString(), latest }, null, 2));
     return latest;
@@ -52,5 +52,5 @@ export async function latestKnown({ data = "", now = Date.now() } = {}) {
 }
 
 // What a person is told, in one line, when `latest` is newer than the running version.
-export const updateLine = (latest, have = VERSION) =>
-  `Agent on Browser ${latest} is ready (you have ${have}). To update: ${UPDATE_COMMAND}  then restart Claude Code.`;
+export const updateLine = (latest, have = VERSION, command = UPDATE_COMMAND) =>
+  `Agent on Browser ${latest} is ready (you have ${have}). To update: ${command}  then restart Claude Code.`;

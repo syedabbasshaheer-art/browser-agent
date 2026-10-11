@@ -255,7 +255,9 @@ test("S9 /cockpit:heartbeat and /heartbeat are a timer waking the agent, not the
 
 // ══ ROBUSTNESS ══
 
-test("R1 the record is written before the log and the ledger: a record that cannot be written leaves the request pending", () => {
+// Root ignores a read-only file, so the case cannot be made to happen there (a container, a cloud workspace).
+const AS_ROOT = typeof process.getuid === "function" && process.getuid() === 0;
+test("R1 the record is written before the log and the ledger: a record that cannot be written leaves the request pending", { skip: AS_ROOT && "root can write a read-only file" }, () => {
   const dir = proj({ "1.1": {}, "1.2": {} });
   const from = exported({ approvals: { o1: pending({ verb: "card.note", card: "1.1", text: "Owner note" }, 1), o2: pending({ verb: "card.move", card: "1.2", to: "BLOCKED" }, 2) } });
   const before = read(P(dir).record);

@@ -86,6 +86,14 @@ export const VERBS = {
   "task.start":   { level: "interact", risk: "medium", mode: "work",    args: ["card"] },
   "plan.accept":  { level: "owner",    risk: "medium", mode: "work",    args: [] },
   "release.push": { level: "owner",    risk: "high",   mode: "confirm", args: [] },
+  // The owner's own word on a card, given while reading the plan: it was already done, or it is not needed.
+  // It closes the card and says so on it. Nobody else can send it, and the agent never does.
+  "card.close":   { level: "owner",    risk: "medium", mode: "apply",   args: ["card", "why"] },
+  // The owner's choice for one goal: accepted (while the plan is a draft), set aside (none of its cards starts),
+  // or brought back. It writes "goals" in the settings and nothing else.
+  "goal.set":     { level: "owner",    risk: "medium", mode: "apply",   args: ["goal", "to"] },
+  // The owner's Update now. It hands the agent one fixed command (the plugin's own update); no text of anyone's is run.
+  "plugin.update": { level: "owner",   risk: "medium", mode: "work",    args: [] },
   // The owner's answer to a question the agent asked on the board. Stored as a note and shown; never obeyed.
   "question.answer": { level: "owner", risk: "low",    mode: "apply",   args: ["card", "qid", "text"] },
   // The owner's switch for automatic work. It writes auto.paused and nothing else in the settings.
@@ -235,7 +243,10 @@ export const DRAFT_REASON ="The plan is a draft. Accept the plan first; then car
 // notes:      the ids in the owner's notes file, when the caller knows them; a removal is then checked against it.
 // auto:       the automatic-work settings ({ paused }). A start asked for by anyone but the owner is refused
 //             while they say paused, and when they are not given: what is not known reads as paused.
-export function decide(action, { cards = [], level = "interact", goals = [], plan = "accepted", lastChange = null, questions = null, undoable = null, notes = null, auto = null } = {}) {
+export const CLOSE_WHY = Object.freeze(["done", "unneeded"]);
+export const GOAL_TO = Object.freeze(["accepted", "aside", "back"]);
+// aside: the goal numbers the owner set aside. No card in one of them starts, whoever asks.
+export function decide(action, { cards = [], level = "interact", goals = [], plan = "accepted", lastChange = null, questions = null, undoable = null, notes = null, auto = null, aside = [] } = {}) {
   const a = action && typeof action === "object" && !Array.isArray(action) ? action : {};
   // A verb is text. Anything else is not looked up, so a list holding a verb's name is not that verb.
   const spec = typeof a.verb === "string" && Object.hasOwn(VERBS, a.verb) ? VERBS[a.verb] : null; // "constructor" and friends are not verbs
@@ -260,7 +271,29 @@ export function decide(action, { cards = [], level = "interact", goals = [], pla
   // Built on a state that has since changed: the button the person pressed no longer says what is true.
   if (args.card && meta.basis != null && lastChange && Object.hasOwn(lastChange, args.card)
     && Number.isInteger(lastChange[args.card]) && meta.basis < lastChange[args.card]) return { ok: false, reason: STALE_REASON };
+  const setAside = (c) => !!c && Array.isArray(aside) && aside.includes(c.g);
+  if ((a.verb === "task.start" || (a.verb === "card.move" && a.to === "START")) && setAside(byId[a.card]))
+    return { ok: false, reason: `Goal ${byId[a.card].g} is set aside, so ${a.card} does not start. Bring the goal back on the Goals page first.` };
   switch (a.verb) {
+    case "card.close": {
+      const c = byId[a.card];
+      if (!CLOSE_WHY.includes(a.why)) return { ok: false, reason: "A card is closed as already done or as not needed." };
+      if (c.st === "DONE") return { ok: false, reason: `${a.card} is already done.` };
+      if (c.st === "START") return { ok: false, reason: `${a.card} is being worked on. Wait for its result, or block it first.` };
+      args.why = a.why; args.from = c.st;
+      break;
+    }
+    case "goal.set": {
+      const g = typeof a.goal === "number" ? a.goal : typeof a.goal === "string" && /^\s*\d{1,3}\s*$/.test(a.goal) ? Number(a.goal) : NaN;
+      if (!Number.isInteger(g) || !goals.some((x) => x.n === g)) return { ok: false, reason: `There is no goal ${safe(a.goal, 10) || "with that number"}.` };
+      if (!GOAL_TO.includes(a.to)) return { ok: false, reason: "A goal is accepted, set aside or brought back." };
+      if (a.to === "accepted" && !draft) return { ok: false, reason: "The plan is already accepted." };
+      if (a.to === "aside" && cards.some((c) => c.g === g && c.st === "START")) return { ok: false, reason: `A card of goal ${g} is being worked on. Set the goal aside once it has finished.` };
+      if (a.to === "aside" && Array.isArray(aside) && aside.includes(g)) return { ok: false, reason: `Goal ${g} is already set aside.` };
+      if (a.to === "back" && !(Array.isArray(aside) && aside.includes(g))) return { ok: false, reason: `Goal ${g} is not set aside.` };
+      args.goal = g; args.to = a.to;
+      break;
+    }
     case "card.move": {
       if (typeof a.to !== "string" || !STATES.includes(a.to)) return { ok: false, reason: `Cards move to ${STATES.join(", ")}, not ${safe(a.to, 20) || "that"}.` };
       const c = byId[a.card];

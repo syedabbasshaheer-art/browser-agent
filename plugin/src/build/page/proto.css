@@ -1824,3 +1824,20 @@ textarea:focus-visible{border-color:var(--pri);box-shadow:0 0 0 1px var(--pri),v
 @media (max-width:699px){.grow .t{flex-basis:calc(100% - 64px)}.planbar .btn{width:100%}}
 .gsech .gchev{transition:none;transform:rotate(45deg);margin:0 4px 4px 2px}
 .gsec.open .gsech .gchev{transform:rotate(-135deg);margin:4px 4px 0 2px}
+
+/* the Goals page: the owner's choice beside each goal, and on each card */
+.gsech{padding:0;gap:0;min-height:0}
+.gsech:hover{background:none}
+.gopen{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:14px;min-height:64px;padding:12px 14px;text-align:left;border-radius:var(--r-lg);color:var(--ink)}
+.gopen:hover{background:var(--s2)}
+.gacts{flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 14px 0 4px}
+.gstate{display:inline-flex;align-items:center;gap:5px;font:600 12.5px/18px var(--ui);color:var(--ink2);white-space:nowrap}
+.gstate.ok{color:var(--dn-fg,var(--dn))}
+.gsec.aside .gtx b,.gsec.aside .gtx small,.gsec.aside .gnum,.gsec.aside .gmeta{opacity:.55}
+.gsec.aside .gcards{opacity:.7}
+.gtri{display:inline-flex;gap:14px;margin-left:auto;opacity:0;transition:opacity var(--t-fast) var(--ease)}
+.gtri .tlink{font-size:12.5px;min-height:28px}
+.gsecs.draft .gtri,.grow:hover .gtri,.grow:focus-within .gtri,.gtri.on{opacity:1}
+@media (hover:none){.gtri{opacity:1}}
+.pbcount{font-weight:700}
+@media (max-width:699px){.gsech{flex-wrap:wrap}.gopen{flex-wrap:wrap;gap:8px 12px;padding:12px}.gacts{padding:0 12px 12px 58px;flex-wrap:wrap}.gtri{margin-left:0;flex-basis:100%}}

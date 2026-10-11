@@ -11,7 +11,8 @@ import path from "node:path";
 import { readStdin } from "./lib.mjs";
 import { HAS_CONFIG, TITLE, ARTIFACT_URL, ROOT, LOCAL, UPDATES } from "../build/config.mjs";
 import { COMMAND, WELCOME, WELCOME_CONTEXT, REMINDER, claimWelcome, claimReminder } from "./welcome.mjs";
-import { VERSION, newer, latestKnown, updateLine } from "../core/update.mjs";
+import { updateLine } from "../core/update.mjs";
+import { noteUpdate } from "./update-note.mjs";
 export { COMMAND, WELCOME, WELCOME_CONTEXT };
 
 const say = (systemMessage, additionalContext) =>
@@ -27,15 +28,8 @@ try {
                    : `Agent on Browser: the ${TITLE} board is not published yet. Type ${COMMAND} publish, or say "publish my board".`);
   } else if (claimWelcome()) { lines.push(WELCOME); context = WELCOME_CONTEXT; }
   else if (claimReminder()) lines.push(REMINDER);
-  // A newer version: one line here, and a note for the board to show under Needs you (read by the next build).
-  const latest = await latestKnown({ data: process.env.CLAUDE_PLUGIN_DATA }), ready = (!HAS_CONFIG || UPDATES) && newer(latest, VERSION);
-  if (ready) lines.push(updateLine(latest));
-  if (HAS_CONFIG) {
-    const note = path.join(ROOT, LOCAL, "update.json");
-    try {
-      if (ready) { fs.mkdirSync(path.dirname(note), { recursive: true }); fs.writeFileSync(note, JSON.stringify({ latest, at: new Date().toISOString() })); }
-      else if (fs.existsSync(note)) fs.rmSync(note);
-    } catch { /* the line above was still said */ }
-  }
+  // A newer version: one line here, a note the build reads, and one line for the open board's Inbox.
+  const up = await noteUpdate();
+  if (up) lines.push(updateLine(up.latest, undefined, up.command) + (HAS_CONFIG ? " Or press Update now in the board's Inbox." : ""));
   if (lines.length) say(lines.join("\n\n"), context);
 } catch { /* a session starts regardless */ }

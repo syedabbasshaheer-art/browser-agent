@@ -225,12 +225,32 @@ function isDraft(){return S.plan==="draft"}
 /* The first plan is still being written: the cards are a placeholder, so there is nothing to accept yet. The page
    learns that the plan is ready from the agent's own line, and then asks for a reload. */
 function isPlanning(){return !!BOARD.planning}
+/* while the plan is being written the record holds the placeholder first, then goal 1, then everything */
+function realPlan(){return !(D.goals.length===1&&/^Your plan is being written/.test(String(D.goals[0].title)))}
+function goalOneSaid(){return L.some(function(e){return /^Goal 1 is ready/.test(String(e.text||""))})}
 function planReady(){return L.some(function(e){return +e.offset>BUILT_OFF&&/^Your plan is ready/.test(String(e.text||""))})}
 var PLANNING_TXT="The agent is reading your project and writing your plan. The cards below are a placeholder. Each step appears on the Live page as it finishes. It takes a few minutes, and you need to do nothing until it is ready.";
 var PLANNED_TXT="Your plan is ready. Reload this page to see it, then read it and accept it.";
 function planningText(){return planReady()?PLANNED_TXT:PLANNING_TXT}
 /* a newer version of the plugin, heard of by a session on the owner's computer */
-function updateText(){var u=BOARD.update;return u?"Version "+u.latest+" of Agent on Browser is ready. This board was built with "+u.have+". In a terminal, run: "+u.command+" and then restart Claude Code.":""}
+/* a newer version: known when the page was built, or heard since through a line (the newest one wins) */
+function verNewer(a,b){var x=String(a||"").split(".").map(Number),y=String(b||"").split(".").map(Number);if(x.length!==3||y.length!==3||x.concat(y).some(isNaN))return false;for(var i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i];return false}
+function UPD(){
+  var u=BOARD.update||null,i,e;
+  for(i=0;i<L.length;i++){e=L[i];if(e.kind==="update"&&e.update&&verNewer(e.update.latest,BOARD.version)&&(!u||verNewer(e.update.latest,u.latest))){u={latest:e.update.latest,have:BOARD.version,command:e.update.command};break}}
+  return u;
+}
+function updAsked(){return allActs().filter(function(a){return a.verb==="plugin.update"&&a.status!=="refused"})[0]||null}
+function updateText(){var u=UPD(),a=updAsked();if(!u)return "";
+  if(a)return a.status==="pending"?"You asked for version "+u.latest+". The agent updates it when its session takes the request.":"Version "+u.latest+" is being installed by the agent. It is in use the next time Claude Code starts in this project.";
+  return "Version "+u.latest+" of Agent on Browser is ready. This board was built with "+u.have+". Press Update now and the agent installs it; it is in use the next time Claude Code starts in this project."}
+function updBtn(sm){return updAsked()||!CAP.db?"":'<button type="button" class="btn btn-filled '+(sm?"btn-xs":"btn-sm")+'" data-act="pupdate" id="updnow">Update now</button>'}
+function updateNow(){
+  if(!UPD()||updAsked())return;
+  if(!CAP.db)return refuse("This view is read-only, so it cannot send the request.");
+  if(!CAP.owner)return refuse("Only the owner can update the plugin.");
+  request({verb:"plugin.update"},{text:"The owner asked on the board for the update of Agent on Browser."});
+}
 /* The plan stops being a draft the moment that is known: an applied plan.accept in the owner's inbox (sent in this
    visit, or decided after this page was built), or the line that says the plan was accepted. */
 var BUILT_AT=String(EMBFEED.updatedAt||"");
@@ -265,7 +285,7 @@ function pendStart(id){var a=pendingMoveOf(id).filter(function(x){return x.verb=
 function waitedFor(a){var m=a&&a.askedAt?Math.max(0,Math.round((Date.now()-Date.parse(a.askedAt))/1000)):null;return m==null||isNaN(m)?"":m<60?" · sent "+m+" s ago":" · sent "+Math.round(m/60)+" min ago"}
 function pendLabel(id){
   var a=pendingMoveOf(id)[0];if(!a)return "";
-  return a.verb==="card.move"?(a.to==="DONE"&&!verified(byId[id])?"Pending: the agent confirms, then Done":a.to==="START"?"Pending: the agent starts it"+waitedFor(a):"Pending: to "+(MOVE_TO[a.to]||a.to))
+  return a.verb==="card.move"?(a.to==="DONE"&&!verified(byId[id])?"Pending: the agent confirms, then Done":a.to==="START"?"Pending: the agent starts it"+waitedFor(a):"Pending: to "+(MOVE_TO[a.to]||"another column"))
     :a.verb==="task.start"?"Pending: the agent starts it"+waitedFor(a):a.verb==="gate.approve"?"Pending: your approval":a.verb==="card.edit"?"Pending: your edit":a.verb==="question.answer"?"Pending: your answer":"Pending: your request";
 }
 /* Why a card cannot be handed to the agent, or "" when it can. The gateway checks the same rules again. */
@@ -391,7 +411,7 @@ function attnItems(){
   if(isPlanning())a.push({key:"draft",notice:true,kind:planReady()?"Your plan is ready":"Your plan is being written",draft:true,text:planningText(),btns:""});
   else if(isDraft())a.push({key:"draft",notice:true,kind:"Draft plan",draft:true,text:"This plan is a draft. Read it, add a note on any card that is wrong, then accept it. Nothing starts until you do.",why:S.draftWhy,
     btns:'<button class="btn btn-filled btn-sm" data-act="accept" id="acceptplan">'+ic(I.check,16)+'Accept plan</button>'});
-  if(BOARD.update&&CAP.owner)a.push({key:"upd:"+BOARD.update.latest,kind:"Update ready",text:updateText(),btns:""});
+  if(UPD()&&CAP.owner)a.push({key:"upd:"+UPD().latest,kind:"Update ready",text:updateText(),btns:updBtn()});
   /* each card says WHY it needs you: a gate's yes, or a card that is yours to do */
   C.filter(function(c){return V.needsYou[c.id]}).forEach(function(c){var why=V.needsYou[c.id],can=why==="approval"&&c.own==="agent"&&CAP.db&&CAP.owner&&!startBlock(c)&&!pendingMoveOf(c.id).length;
     var ask=why==="question"&&slotQs().filter(function(q){return q.card===c.id})[0];
@@ -992,6 +1012,36 @@ function pathHTML(){
    +'<p class="netkey">'+FLOWKEY+'<span><u class="kg"></u>Done</span></p></div>'
    +'<div class="pathbox" id="pathbox" tabindex="0" role="group" aria-label="Flow chart of the project. Scrolls both ways." data-x0="'+Math.round((X0+first*STEP-24)*z)+'"><div class="pzoom" style="zoom:'+z+'">'+ch.html+'</div></div></div>';
 }
+/* The owner's choice for each goal: what the build knew, then every choice applied since, oldest first. */
+function goalsNow(){
+  var acc={},asd={},G=BOARD.goals||{};
+  (G.accepted||[]).forEach(function(n){acc[n]=1});(G.aside||[]).forEach(function(n){asd[n]=1});
+  CAP.acts.approvals.filter(function(a){return a.verb==="goal.set"&&a.status==="done"&&(sentHere(a)||String(a.decidedAt||a.askedAt||"")>BUILT_AT)})
+    .sort(function(x,y){return String(x.askedAt||"").localeCompare(String(y.askedAt||""))})
+    .forEach(function(a){var g=+a.goal;if(a.to==="accepted"){acc[g]=1;delete asd[g]}else if(a.to==="aside"){asd[g]=1;delete acc[g]}else if(a.to==="back")delete asd[g]});
+  return {acc:acc,asd:asd};
+}
+function goalPend(n){return allActs().some(function(a){return a.verb==="goal.set"&&+a.goal===n&&a.status==="pending"})}
+function closePend(id){return allActs().some(function(a){return a.verb==="card.close"&&a.card===id&&a.status==="pending"})}
+function goalActs(g,now,fin){
+  var n=g.n,aside=!!now.asd[n],acc=!!now.acc[n],can=CAP.db&&CAP.owner,b=function(to,cls,label){return '<button type="button" class="btn '+cls+' btn-xs" data-act="goalset" data-g="'+n+'" data-to="'+to+'">'+label+'</button>'};
+  if(isPlanning())return "";
+  if(goalPend(n))return '<span class="gacts"><span class="gstate pend"><i class="spin"></i>Sent, waiting for the agent</span></span>';
+  if(aside)return '<span class="gacts"><span class="gstate">Set aside</span>'+(can?b("back","btn-tonal","Bring back"):"")+'</span>';
+  if(!can)return isDraft()&&acc?'<span class="gacts"><span class="gstate ok">Accepted</span></span>':"";
+  if(isDraft())return '<span class="gacts">'+(acc?'<span class="gstate ok">'+ic(I.check,14)+'Accepted</span>':b("accepted","btn-filled","Accept"))+b("aside",acc?"btn-text":"btn-outlined","Set aside")+'</span>';
+  return fin?"":'<span class="gacts quiet">'+b("aside","btn-text","Set aside")+'</span>';
+}
+function goalSet(n,to){
+  if(!CAP.db)return refuse("This view is read-only, so it cannot send the request.");
+  if(!CAP.owner)return refuse("Only the owner decides on a goal.");
+  request({verb:"goal.set",goal:n,to:to},{uniq:n+":"+to,text:"The owner "+(to==="accepted"?"accepted":to==="aside"?"set aside":"brought back")+" goal "+n+" on the board."});
+}
+function cardClose(id,why){
+  if(!CAP.db)return refuse("This view is read-only, so it cannot send the request.");
+  if(!CAP.owner)return refuse("Only the owner closes a card on their own word.");
+  request({verb:"card.close",card:id,why:why},{uniq:why,text:"The owner closed card "+id+" on the board as "+(why==="done"?"already done":"not needed")+"."});
+}
 /* a goal on the List is open when the reader opened it; untouched, the first goal with work left is the open one */
 function goalOpen(n){
   if(S.gopen&&S.gopen[n]!=null)return !!S.gopen[n];
@@ -1004,20 +1054,23 @@ function listHTML(){
   cs.sort(function(a,b){var x=val(a),y=val(b);return k==="id"?a.id.localeCompare(b.id,"en",{numeric:true})*d:(x<y?-1:x>y?1:a.id.localeCompare(b.id,"en",{numeric:true}))*d});
   var th=function(key,l){return '<th scope="col" aria-sort="'+(k===key?(d>0?"ascending":"descending"):"none")+'"><button data-act="sort" data-k="'+key+'">'+l+(k===key?(d>0?" ↑":" ↓"):"")+'</button></th>'};
   var mode=S.lmode==="table"?"table":"goal",gs=D.goals.filter(function(g){return cs.some(function(c){return c.g===g.n})}),allOpen=gs.length&&gs.every(function(g){return goalOpen(g.n)});
-  var head='<div class="viewhead"><h2>The plan</h2><span class="chip mono">'+D.goals.length+" goal"+(D.goals.length===1?"":"s")+" · "+(cs.length===C.length?C.length:cs.length+" of "+C.length)+" cards"+'</span>'
+  var head='<div class="viewhead"><h2>Goals</h2><span class="chip mono">'+D.goals.length+" goal"+(D.goals.length===1?"":"s")+" · "+(cs.length===C.length?C.length:cs.length+" of "+C.length)+" cards"+'</span>'
    +'<div class="seg sm" role="group" aria-label="How the cards are listed"><button data-act="set" data-k="lmode" data-val="goal" aria-pressed="'+(mode==="goal")+'">By goal</button><button data-act="set" data-k="lmode" data-val="table" aria-pressed="'+(mode==="table")+'">One table</button></div>'
    +(mode==="goal"&&gs.length?'<button type="button" class="btn btn-text btn-sm" data-act="gall" data-v="'+(allOpen?"0":"1")+'" id="gall">'+(allOpen?"Close all goals":"Open all goals")+'</button>':"")
    +'<button type="button" class="btn btn-tonal btn-sm" data-act="view" data-v="path" id="topath">'+ic(I.path,16)+'See it as a flow chart</button>'
-   +'<p>'+(mode==="goal"?"Each goal says what is true when it is reached. Open a goal to see its cards, in the order they are meant to happen.":"Every card in one table, for searching and sorting.")+'</p></div>'
-   +(isDraft()&&!isPlanning()?'<div class="planbar" id="planbar"><p><b>This plan is a draft.</b> Read the goals, open any card and add a note where it is wrong, then accept it. Nothing starts before that.'+(S.draftWhy?' <span class="pbwhy" role="status">'+esc(S.draftWhy)+'</span>':"")+'</p><button type="button" class="btn btn-filled" data-act="accept" id="acceptlist">'+ic(I.check,18)+'Accept plan</button></div>':"");
-  if(mode==="goal")return head+(gs.length?'<div class="gsecs" id="gsecs">'+gs.map(function(g){
+   +'<p>'+(mode==="goal"?(isPlanning()?(realPlan()?"Goal 1 is ready to read below: it starts from what you already have. The agent is now studying your field and writing the goals that follow; they appear here when it is done, and then you decide.":"The agent is reading your project and writing its goals. They appear here when it is done; until then this is a placeholder."):isDraft()?"This is the agent's reading of your project: where it stands, and what it suggests doing next, as goals with the cards that reach them. Nothing here is fixed and nothing has started. You do not have to keep this page up to date: the agent does that. You only decide.":"Each goal says what is true when it is reached. Open a goal to see its cards, in the order they are meant to happen. The agent keeps this page up to date as the work moves."):"Every card in one table, for searching and sorting.")+'</p></div>'
+   +(isDraft()&&!isPlanning()?'<div class="planbar" id="planbar"><p><b>This plan is a draft, and it is yours to shape.</b> Accept each goal you want, set aside the ones you do not, and mark any card that is already done. Or accept them all at once. Nothing starts before that.'+(function(){var w=goalsNow(),k=D.goals.filter(function(g){return w.acc[g.n]||w.asd[g.n]}).length;return k?' <span class="pbcount" id="pbcount">'+k+" of "+D.goals.length+" goals decided.</span>":""})()+(S.draftWhy?' <span class="pbwhy" role="status">'+esc(S.draftWhy)+'</span>':"")+'</p><button type="button" class="btn btn-filled" data-act="accept" id="acceptlist">'+ic(I.check,18)+'Accept all goals</button></div>':"");
+  var gnow=goalsNow(),tri=CAP.db&&CAP.owner&&!isPlanning();
+  if(mode==="goal")return head+(gs.length?'<div class="gsecs'+(isDraft()?" draft":"")+'" id="gsecs">'+gs.map(function(g){
       var mine=cs.filter(function(c){return c.g===g.n}).sort(function(a,b){return a.id.localeCompare(b.id,"en",{numeric:true})}),all=C.filter(function(c){return c.g===g.n}),
         dn=all.filter(function(c){return E.phase[c.id]==="DONE"}).length,run=all.filter(function(c){return E.phase[c.id]==="START"}).length,open=goalOpen(g.n),fin=all.length&&dn===all.length;
-      return '<section class="gsec'+(open?" open":"")+(fin?" fin":"")+'" id="lg-'+g.n+'" data-g="'+g.n+'"><button type="button" class="gsech" data-act="gtoggle" data-g="'+g.n+'" aria-expanded="'+open+'" aria-controls="lgc-'+g.n+'">'
+      return '<section class="gsec'+(open?" open":"")+(fin?" fin":"")+(gnow.asd[g.n]?" aside":"")+'" id="lg-'+g.n+'" data-g="'+g.n+'"><div class="gsech"><button type="button" class="gopen" data-act="gtoggle" data-g="'+g.n+'" aria-expanded="'+open+'" aria-controls="lgc-'+g.n+'">'
         +'<span class="gnum">'+g.n+'</span><span class="gtx"><b>'+esc(g.title)+'</b>'+(g.sub?'<small>'+esc(g.sub)+'</small>':"")+'</span>'
-        +'<span class="gmeta">'+(fin?"Done":dn+" of "+all.length+" done"+(run?" · "+run+" in progress":""))+'</span><i class="gchev" aria-hidden="true"></i></button>'
+        +'<span class="gmeta">'+(fin?"Done":dn+" of "+all.length+" done"+(run?" · "+run+" in progress":""))+'</span><i class="gchev" aria-hidden="true"></i></button>'+goalActs(g,gnow,fin)+'</div>'
         +(open?'<div class="gcards" id="lgc-'+g.n+'">'+mine.map(function(c){var o=openDeps(c);
-            return '<div class="grow row" data-act="open" data-id="'+esc(c.id)+'" tabindex="0" role="button" aria-label="'+esc("Card "+c.id+": "+c.title)+'"><span class="cid s-'+E.phase[c.id]+'">'+esc(c.id)+'</span><span class="t">'+esc(c.title)+'</span>'+chipState(E.phase[c.id])+chipOwn(c.own)+(o.length?'<span class="gwait">Waits on '+esc(o.join(", "))+'</span>':"")+'</div>'}).join("")+'</div>':"")
+            return '<div class="grow row" data-act="open" data-id="'+esc(c.id)+'" tabindex="0" role="button" aria-label="'+esc("Card "+c.id+": "+c.title)+'"><span class="cid s-'+E.phase[c.id]+'">'+esc(c.id)+'</span><span class="t">'+esc(c.title)+'</span>'+(isDraft()&&E.phase[c.id]!=="DONE"?"":chipState(E.phase[c.id]))+chipOwn(c.own)+(o.length&&!isDraft()?'<span class="gwait">Waits on '+esc(o.join(", "))+'</span>':"")
+              +(tri&&E.phase[c.id]!=="DONE"&&E.phase[c.id]!=="START"?(closePend(c.id)?'<span class="gtri on"><span class="gstate pend"><i class="spin"></i>Sent</span></span>'
+                :'<span class="gtri"><button type="button" class="tlink" data-act="cclose" data-id="'+esc(c.id)+'" data-why="done">Already done</button><button type="button" class="tlink" data-act="cclose" data-id="'+esc(c.id)+'" data-why="unneeded">Not needed</button></span>'):"")+'</div>'}).join("")+'</div>':"")
         +'</section>'}).join("")+'</div>'
     :'<div class="empty"><b>No cards match</b><p>Loosen a filter to see cards here.</p><button class="btn btn-tonal btn-sm" data-act="clearf">Clear filters</button></div>');
   return head
@@ -1180,7 +1233,8 @@ function needItems(){
     out.push({key:"b:"+c.id,kind:"blocked",card:c.id,cap:"Blocked",text:"“"+c.title+"” is blocked. Open it to read what it waits on.",btn:"Open it",open:true})});
   var halt=null;for(var hi=0;hi<L.length;hi++){var he=L[hi];if(/^The agent stopped while /.test(String(he.text||""))){halt=he;break}if(he.who==="Agent"&&(he.kind==="said"||he.say==="turn-end"))break}
   if(halt)out.unshift({key:"halt:"+halt.offset,kind:"stopped",cap:"The agent stopped",text:halt.text,btn:CAP.owner&&CAP.comments?"Ask the agent to continue":"",run:function(){wake()}});
-  if(BOARD.update&&CAP.owner&&!S.dismissed["upd:"+BOARD.update.latest])out.unshift({key:"upd:"+BOARD.update.latest,kind:"update",cap:"Update ready",text:updateText(),btn:"Dismiss",tonal:true,run:function(){S.dismissed["upd:"+BOARD.update.latest]=true;save();render()}});
+  if(UPD()&&CAP.owner&&!S.dismissed["upd:"+UPD().latest])(function(u){out.unshift(updAsked()?{key:"upd:"+u.latest,kind:"update",cap:"Update ready",text:updateText(),btn:"Dismiss",tonal:true,run:function(){S.dismissed["upd:"+u.latest]=true;save();render()}}
+    :{key:"upd:"+u.latest,kind:"update",cap:"Update ready",text:updateText(),btn:"Update now",run:updateNow})})(UPD());
   if(isPlanning())out.unshift({key:"draft",kind:"draft",cap:planReady()?"Your plan is ready":"Your plan is being written",text:planningText(),btn:""});
   else if(isDraft())out.unshift({key:"draft",kind:"draft",cap:"Draft plan",text:"This plan is a draft. Read it, add a note on any card that is wrong, then accept it. Nothing starts until you do.",
     btn:CAP.db&&CAP.owner?"Accept plan":"",run:acceptPlan,why:S.draftWhy||(CAP.db&&!CAP.owner?"Only the owner can accept the plan.":"")});
@@ -1265,7 +1319,7 @@ function askStatus(){
 /* the Now sentence, without "Last word …": what the block shows and what is announced when it changes */
 function nowSay(st){
   var k=st.k,sp;
-  if(isPlanning())return planReady()?"Your plan is ready. Reload this page to see it.":"The agent is writing your plan. Each step appears below as it finishes.";
+  if(isPlanning())return planReady()?"Your plan is ready. Reload this page to see it.":realPlan()?"Goal 1 is ready to read. The agent is writing the goals that follow.":goalOneSaid()?"Goal 1 is ready. Reload this page to read it; the other goals follow.":"The agent is writing your plan. Each step appears below as it finishes.";
   if(isDraft()&&k!=="working"&&k!=="quiet")return "The plan is a draft. Nothing starts until you accept it.";   /* a draft has one next step, and it is not a card */
   if(k==="working"){sp=stepOf(st.prog);return "The agent is on "+cidBtn(st.card)+(sp?", step "+sp.step+" of "+sp.of:"")+"."}
   if(k==="quiet")return "No word from the agent on "+cidBtn(st.card)+" for "+span(st.mins)+". It may have stopped.";
@@ -2029,6 +2083,9 @@ document.addEventListener("click",function(e){
     case "pop":S.pop=S.pop===d.p?null:d.p;S.drawer=false;break;
     case "palette":S.palette=true;S.pq="";S.pi=0;break;
     case "accept":acceptPlan();return;
+    case "pupdate":updateNow();return;
+    case "goalset":goalSet(+d.g,d.to);return;
+    case "cclose":cardClose(d.id,d.why);return;
     case "open":S.sheet=d.id;S.stab=d.tab==="chat"?"chat":"card";S.palette=false;S.attnOpen=false;break;
     case "stab":S.stab=d.v==="chat"?"chat":"card";break;
     case "closesheet":S.refocus=S.sheet;S.sheet=null;S.dialog=null;break;
@@ -2192,7 +2249,7 @@ window.__board={S:S,CAP:CAP,render:render,tick:tick,prog:progOf,V:function(){ret
   S.goal=ok(h)||ok(ss)||+V.views.all[0]||D.goals[0].n;
   /* the view: the one named in the address, else the one chosen earlier in this visit, else Live */
   var hv=String(location.hash).slice(1),sv2="";try{sv2=sessionStorage.getItem("lob.view")||""}catch(e){}
-  S.view=VIEW_OK[hv]?hv:h?"board":VIEW_OK[sv2]?sv2:(BOARD.plan==="draft"&&!BOARD.planning?"list":"live")})();
+  S.view=VIEW_OK[hv]?hv:h?"board":VIEW_OK[sv2]?sv2:(BOARD.plan==="draft"&&(!BOARD.planning||realPlan())?"list":"live")})();
 window.addEventListener("hashchange",function(){var v=String(location.hash).slice(1),g=(v.match(/^goal-?(\d+)$/)||[])[1];if(g){setGoal(+g);setView("board");S.scrollGoal=true;render()}else if(VIEW_OK[v]&&v!==S.view){setView(v);render()}});
 /* PENDTICK */setInterval(function(){try{if(allActs().some(function(a){return a.status==="pending"})&&!typingIn())render()}catch(e){}},10000);
 $("canvas").addEventListener("scroll",function(){if(S.view==="live")nyBar()},{passive:true});

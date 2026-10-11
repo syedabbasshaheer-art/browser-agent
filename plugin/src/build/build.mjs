@@ -22,13 +22,15 @@ import { buildFeed } from "../events/feed.mjs";
 import { parseNotes, NOTE_SECTIONS, FILES as MEMORY_FILES } from "../core/memory.mjs";
 import { VERSION, newer, UPDATE_COMMAND } from "../core/update.mjs";
 
+// A card the owner closed on their own word from the Goals page (src/core/apply.mjs writes exactly these words).
+const OWNER_CLOSED = /Verified: (?:the owner said on the board on \*{0,2}\d{4}-\d{2}-\d{2}\*{0,2} that this was already done|closed by the owner on the board on \*{0,2}\d{4}-\d{2}-\d{2}\*{0,2} as not needed)/;
 // A newer version a session heard of (written by the session-start hook), or null. Read at build time, so the
 // notice goes as soon as the running code is that version.
 function updateNotice() {
   try {
     if (!CFG.UPDATES) return null;
     const u = JSON.parse(fs.readFileSync(path.join(CFG.ROOT, CFG.LOCAL, "update.json"), "utf8"));
-    return newer(u.latest, VERSION) ? { have: VERSION, latest: String(u.latest), command: UPDATE_COMMAND } : null;
+    return newer(u.latest, VERSION) ? { have: VERSION, latest: String(u.latest), command: typeof u.command === "string" && u.command.startsWith(UPDATE_COMMAND) ? u.command : UPDATE_COMMAND } : null;
   } catch { return null; }
 }
 
@@ -171,7 +173,7 @@ export function build({ write = true } = {}) {
     if (c.st === "START") rec.errors.push(`card ${c.id} is in START but the plan is a draft: nothing starts until the owner accepts the plan on the board; put it back to BACKLOG`);
     // While the first plan is being written, the ids of the placeholder are reused by the real plan: a card the
     // agent found already finished in the folder is written as DONE with its evidence, and that is not a close.
-    else if (c.st === "DONE" && !CFG.PLANNING && was && was[c.id] && was[c.id] !== "DONE") rec.errors.push(`card ${c.id} moved to DONE but the plan is a draft: nothing closes until the owner accepts the plan on the board; leave it in ${was[c.id]}`);
+    else if (c.st === "DONE" && !CFG.PLANNING && was && was[c.id] && was[c.id] !== "DONE" && !OWNER_CLOSED.test(c.t || "")) rec.errors.push(`card ${c.id} moved to DONE but the plan is a draft: nothing closes until the owner accepts the plan on the board; leave it in ${was[c.id]}`);
   });
   if (CFG.PATH_ERROR) rec.errors.push(`.cockpit/config.json: ${CFG.PATH_ERROR}`);
   if (CFG.CONFIG_ERROR) rec.errors.push(`.cockpit/config.json is not valid JSON (${CFG.CONFIG_ERROR}): fix it; until then the plan is treated as a draft`);
@@ -192,7 +194,7 @@ export function build({ write = true } = {}) {
     WIP: CFG.WIP, LAUNCH: CFG.LAUNCH, title: CFG.TITLE, repo: repoUrl(),
     liveWord: /noindex|hidden|not findable/i.test(live) ? "Hidden" : liveUrl === "#" ? "Not yet" : "Public",
     liveNote: (live.split(". ")[0] || "No Live row in the record").replace(/[.]$/, "") + ".",
-    tile: CFG.TILE ? CFG.TILE.label : "", record: CFG.RECORD, plan: CFG.PLAN, planning: CFG.PLANNING, update: updateNotice(), version: VERSION,
+    tile: CFG.TILE ? CFG.TILE.label : "", record: CFG.RECORD, plan: CFG.PLAN, planning: CFG.PLANNING, update: updateNotice(), version: VERSION, goals: { accepted: CFG.GOALS_ACCEPTED, aside: CFG.GOALS_ASIDE },
     rows: (rowsTxt.match(/[\d,]+/) || ["?"])[0],
     rowsNote: rowsTxt.replace(/^[\d,]+\s*—?\s*/, "") || "From the record",
   };

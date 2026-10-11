@@ -39,6 +39,9 @@ function asked(e) {
     case "card.edit": return `You asked to edit${c || " a card"}.`;
     case "gate.approve": return `You approved${c || " a card"}.`;
     case "plan.accept": return "You accepted the plan.";
+    case "plugin.update": return "You asked for the update of Agent on Browser.";
+    case "card.close": return `You closed${c || " a card"} on your own word.`;
+    case "goal.set": return e.to === "aside" ? "You set a goal aside." : e.to === "back" ? "You brought a goal back." : "You accepted a goal.";
     case "question.answer": return `You answered a question on${c || " a card"}.`;
     case "auto.set": return "You used the switch for automatic work.";
     case "message.send": return "You sent the agent a message.";
@@ -52,6 +55,8 @@ function asked(e) {
 const A = "Agent", Y = "You", B = "Board";
 const SAY = {
   "claude.said": (e) => ["said", clip(e.text), A],
+  "update.ready": (e) => ["update", "Version " + clip(e.latest, 12) + " of Agent on Browser is ready. This project runs " + clip(e.have, 12) + ".", B],
+  "update.requested": (e) => ["update", "The update to version " + clip(e.latest, 12) + " was asked for on the board.", B],
   "claude.asked": (e) => ["question", clip(e.text), A],
   "question.answered": (e) => ["answered", "You answered: " + clip(e.text, 240), Y],
   "session.started": () => ["session", "An agent session started.", A],
@@ -78,6 +83,7 @@ const SAY = {
     return ["mirror", `The board page's data was updated to match the plan file: ${n} item${n === 1 ? "" : "s"} changed.`, B]; },
   "board.published": () => ["published", "A new version of the board page was published.", B],
   "plan.accepted": () => ["accepted", "The plan was accepted. Cards can now start.", B],
+  "goal.set": (e) => ["goal", e.to === "aside" ? `Goal ${Number(e.goal) || ""} was set aside. None of its cards will start.` : e.to === "back" ? `Goal ${Number(e.goal) || ""} is back in the plan.` : `Goal ${Number(e.goal) || ""} was accepted.`, B],
   "auto.paused": () => ["paused", "You paused automatic work.", Y],
   "auto.resumed": () => ["resumed", "You switched automatic work back on.", Y],
   // The feed is shown to every viewer; a note is the owner's instruction to the agent. Only that it changed is said.
@@ -126,6 +132,7 @@ export function entryOf(e, { answers = null } = {}) {
   if (c && typeof c === "string") out.card = c;
   if (Number.isInteger(e.step) && Number.isInteger(e.of) && e.of > 0 && e.step >= 0 && e.step <= e.of) { out.step = e.step; out.of = e.of; }
   if (e.type === "claude.said") out.say = SAY_KINDS.includes(e.say) ? e.say : "milestone";
+  if (e.type === "update.ready" && /^\d+\.\d+\.\d+$/.test(String(e.latest))) out.update = { latest: e.latest, have: /^\d+\.\d+\.\d+$/.test(String(e.have)) ? e.have : "", command: typeof e.command === "string" && /^claude plugin update browser-agent@browser-agent( --scope (project|local))?$/.test(e.command) ? e.command : "claude plugin update browser-agent@browser-agent" };
   // up to two replies the agent offered with a result: text the owner may send with one press
   if (e.type === "claude.said" && out.say === "result" && out.card && Array.isArray(e.replies)) {
     const r = e.replies.filter((x) => typeof x === "string" && x.trim()).slice(0, 2).map((x) => clip(x, 60));

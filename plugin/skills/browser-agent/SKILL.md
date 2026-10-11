@@ -29,45 +29,65 @@ accept the plan. Do these in order, without asking them to type anything else:
 
    ```
    Setting up your board
-     [ ] 1  A board opens in your browser          about a minute
-     [ ] 2  I read your project: every file, whatever it is made of
-     [ ] 3  I study your field, so the plan fits it
-     [ ] 4  I write the plan: goals, then cards    a few minutes
-     [ ] 5  You accept the plan on the board       the only thing I need from you
+     [ ] 1  A board opens in your browser               about a minute
+     [ ] 2  I read your project, whatever it is made of
+     [ ] 3  Goal 1 is on the board: your next step      the first thing to read
+     [ ] 4  I study your field and write the goals that follow
+     [ ] 5  You decide on the board: accept, set aside, or mark as done
 
    Claude Code will ask your permission to publish the board and to write to it.
    Choose "always allow" for those two, so the board can keep itself up to date.
    ```
+
+   **The board comes before everything.** Until the board's link is in front of the person, do nothing that is
+   not on this list: do not run this plugin's tests, do not read or review its source, do not explore its folder,
+   do not study the project yet. The page is the plugin's own build; if your publishing tool requires you to read
+   a file before publishing it, read it once now and do not read it again on later publishes (a rebuild changes
+   only the data inside it). A person watching a terminal for five minutes with nothing to look at leaves.
 
 2. **Open the board at once.** `init --planning` (it writes a placeholder plan), then `publish`, then
    `link <the address the Artifact tool returned> --open`. The page is this plugin's own build of the project's
    record, so publish it straight away. Then one line in the terminal: "Step 1 is done: your board is open in
    your browser. Watch the Live page there." and the same on the board: `say "The board is open. Next: reading
    the project." --step 1/5`, and send its batch.
-3. **Write the plan**: read `PLAN.md` beside this file and follow it. The first draft is the whole first
-   impression: its goals must be this project's own, in its field's words. Post one `say` line when you have read
-   the project (`--step 2/5`, with what you found, in counts), one when you have studied the field (`--step 3/5`,
-   naming the field and where the person stands in it), and one when the plan is written (`--step 4/5`, with the
-   count of goals and cards and the name of the first and the last goal). Do not ask anything in the terminal: what
-   you had to assume becomes a question on the board.
-4. **Hand over**: `planned`, publish again to the same address, then
-   `say "Your plan is ready: N cards in G goals. Reload this page to see it, then accept it." --kind result` (the
-   open page reacts to a line that begins "Your plan is ready"), then the questions from `PLAN.md` step 7.
+3. **Goal 1 first.** Read `PLAN.md` beside this file and follow its "order of work". Read the folder, post one
+   `say` line with what you found, in counts (`--step 2/5`). Then write goal 1 only: the next step that starts
+   from what the person already has. `lint`, `build`, publish to the same address, and
+   `say "Goal 1 is ready: <its name>. Reload this page to read it; the other goals follow." --step 3/5`. In the
+   terminal, one line: "Goal 1 is on your board: <its name>." This is the first real thing the person sees, so
+   it comes before any study of the field and before any web search.
+4. **Then the rest, and hand over.** Study the field (a web search tool, if you have one: three searches at
+   most), write the goals that follow, and run the guide's checks. Post `say` with the field and where the
+   person stands in it (`--step 4/5`). Then `planned`, publish again to the same address, and
+   `say "Your plan is ready: N cards in G goals. Reload this page to see it, then decide." --kind result` (the
+   open page reacts to a line that begins "Your plan is ready"), then the questions from `PLAN.md` step 7. Do not
+   ask anything in the terminal: what you had to assume becomes a question on the board.
 5. **Finish in the terminal with the plan and this table, and nothing longer.** First one sentence saying how you
    read the project and where the plan takes it, then the output of `node "$P/src/cli/cockpit.mjs" goals` exactly
    as printed, in a code block, then the table, filled in:
 
    ```
-   Your board is ready: <the address>
+   Your board is ready. Open it in your browser: <the full https address, on a line of its own>
 
    | Where            | What                                                             |
    |------------------|------------------------------------------------------------------|
-   | On the board     | Read the goals. Answer the N questions under Needs you. Accept it. |
+   | On the board     | Read the goals. Accept each one, or set it aside. Mark what is already done. Answer the N questions. |
    | Leave to me      | Doing the cards and keeping the board up to date.                |
    | In this terminal | Nothing. Keep it open: the board talks to this session.          |
    ```
 
    Add at most three lines after it, only for something the person must know (a card that is theirs, a risk).
+
+**In a session where this plugin's hooks are not running** (a cloud workspace, a session that installed the
+plugin after it started): everything still works by hand. Run each command yourself, send every batch a command
+prints, and run its `push --sent` line straight after, every time. The board cannot ring you there, so the last
+row of the table reads "In this chat: say 'check the board' after you press anything there", and you run `inbox`
+when they do. `link --open` says so when it could not open a browser: give the person the full link, as a link
+they can open in their own browser, in your next line.
+
+**If a batch is refused because a line already exists** (`live/u<N>` is there): that line was sent before and
+its `push --sent` was missed. Run `push --sent <N>` for the highest such line, run `push` again, and send the
+new batch.
 
 If the folder is empty, or they only want a look, stop after step 2 with the starter board: run `init` without
 `--planning`, publish, and `link <address> --open`.

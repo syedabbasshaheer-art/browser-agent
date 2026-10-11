@@ -168,8 +168,9 @@ function inboxLocked(dir) {
   const logged = decidedInLog();
   for (const k of Object.keys(logged)) if (!Object.hasOwn(decided, k)) decided[k] = logged[k];
   let { md, rec, E } = loadRecord();
-  const results = [], work = [], messages = [];
+  const results = [], work = [], messages = [], updates = [];
   let plan = CFG.PLAN, paused = CFG.AUTO.paused !== false;
+  let accepted = CFG.GOALS_ACCEPTED.slice(), aside = CFG.GOALS_ASIDE.slice();   // the owner's choices goal by goal
   let recordChanged = false, configChanged = false, notesChanged = false;
   // What the gateway is told about the log: when each card's state last changed (a request built before
   // that is stale), and which questions were asked and are still open.
@@ -209,7 +210,7 @@ function inboxLocked(dir) {
   // One request, decided. Nothing is written here: it returns what to write. A request that cannot be decided
   // is refused, and the run goes on to the next.
   const decideOne = ({ id, level, d: data }) => {
-    const d = decide(data, { cards: rec.cards, level, goals: rec.goals, plan, lastChange, questions, undoable, notes: noteIds, auto: { paused } });
+    const d = decide(data, { cards: rec.cards, level, goals: rec.goals, plan, lastChange, questions, undoable, notes: noteIds, auto: { paused }, aside });
     const by = level === "owner" ? "the owner" : "a contributor";
     if (!d.ok) return { status: "refused", result: d.reason };
     if (d.mode === "confirm") return { status: "awaiting-confirmation", result: `${d.verb} is high risk. The owner must confirm it from approvals/.` };
@@ -221,6 +222,14 @@ function inboxLocked(dir) {
           const cfg = JSON.parse(fs.readFileSync(CFG.CONFIG_FILE, "utf8")); cfg.plan = "accepted";
           return { status: "accepted", result: "Plan accepted. Cards can start now: drop a ready card on Start.", config: JSON.stringify(cfg, null, 2) + "\n",
             events: [["plan.accepted", { via: "browser", action: id }]], then: () => { plan = "accepted"; } };
+        }
+        if (d.verb === "plugin.update") {
+          // The command is this plugin's own, built here from the note the hook left; nothing from the page is run.
+          let u = null; try { u = JSON.parse(fs.readFileSync(path.join(FILES.local, "update.json"), "utf8")); } catch { /* none known */ }
+          const okCmd = u && typeof u.command === "string" && /^claude plugin update browser-agent@browser-agent( --scope (project|local))?$/.test(u.command) && /^\d+\.\d+\.\d+$/.test(String(u.latest));
+          if (!okCmd) return { status: "refused", result: "No newer version is known in this project, so there is nothing to update to." };
+          return { status: "accepted", result: `The agent is updating Agent on Browser to ${u.latest} now. It is in use the next time Claude Code starts in this project.`,
+            events: [["update.requested", { latest: u.latest, via: "browser", action: id }]], then: () => updates.push({ latest: u.latest, command: u.command }) };
         }
         if (d.verb === "message.send") {
           // Typed on a card: it is about that card. Typed in the message box: it is about a card only when its
@@ -243,6 +252,20 @@ function inboxLocked(dir) {
           then: () => work.push({ card: d.args.card, title, kind: "confirm" }) };
         return { status: "accepted", result: `Accepted. The agent does ${d.verb} now.` };
       }
+      if (d.verb === "goal.set") {
+        // The owner's choice for one goal. Only "goals" (and "plan", when the last undecided goal is accepted) is
+        // written; every other key of the settings is carried over as it was.
+        const cfg = JSON.parse(fs.readFileSync(CFG.CONFIG_FILE, "utf8")), g = d.args.goal;
+        const acc = new Set(accepted), asd = new Set(aside);
+        if (d.args.to === "accepted") { acc.add(g); asd.delete(g); } else if (d.args.to === "aside") { asd.add(g); acc.delete(g); } else asd.delete(g);
+        const all = rec.goals.every((x) => acc.has(x.n) || asd.has(x.n)), done = plan === "draft" && all && acc.size > 0;
+        cfg.goals = { accepted: [...acc].sort((x, y) => x - y), aside: [...asd].sort((x, y) => x - y) };
+        if (done) cfg.plan = "accepted";
+        const said = d.args.to === "accepted" ? `Goal ${g} is accepted.` : d.args.to === "aside" ? `Goal ${g} is set aside: none of its cards will start. It stays in the plan and can be brought back.` : `Goal ${g} is back in the plan.`;
+        return { status: "done", result: said + (done ? " Every goal is now decided, so the plan is accepted and cards can start." : ""), config: JSON.stringify(cfg, null, 2) + "\n",
+          events: [["goal.set", { goal: g, to: d.args.to, via: "browser", action: id }], ...(done ? [["plan.accepted", { via: "browser", action: id }]] : [])],
+          then: () => { accepted = [...acc]; aside = [...asd]; if (done) plan = "accepted"; } };
+      }
       if (d.verb === "auto.set") {
         // The owner's switch. Only auto.paused is written; the file's other keys are carried over as they were.
         const r = applyAutoSet(fs.readFileSync(CFG.CONFIG_FILE, "utf8"), d);
@@ -261,7 +284,7 @@ function inboxLocked(dir) {
           events: [["notes.removed", { id: d.args.id, via: "browser", action: id }]], then: () => { noteIds = noteIds.filter((n) => n !== d.args.id); } };
       }
       const r = applyDecision(md, d, { date: today(), by });
-      const out = { status: "done", result: r.change.type === "question.answered" ? `Applied: your answer on ${r.change.card} is stored.` : `Applied: ${r.change.type} ${r.change.card}${r.change.to ? " -> " + r.change.to : ""}.`, md: r.md, events: [] };
+      const out = { status: "done", result: r.change.closed ? `Applied: ${r.change.card} is closed as ${r.change.closed === "done" ? "already done" : "not needed"}, on your word.` : r.change.type === "question.answered" ? `Applied: your answer on ${r.change.card} is stored.` : `Applied: ${r.change.type} ${r.change.card}${r.change.to ? " -> " + r.change.to : ""}.`, md: r.md, events: [] };
       // An answer is written to the log and to its line in the questions file by one code path.
       if (r.change.type === "question.answered") out.answered = r.change; else out.events.push([r.change.type, { ...r.change, via: "browser", action: id }]);
       return out;
@@ -353,6 +376,12 @@ function inboxLocked(dir) {
   console.log(`Send with ArtifactData batch, one call per file (the last also refreshes the live rail):\n  ${files.join("\n  ")}`);
   // The lines this run wrote (a card that moved, a request accepted or refused) reach the page with the same sending.
   pushHint("Then the new lines for the Live page, with one more ArtifactData batch call:");
+  if (updates.length) {
+    const u = updates[updates.length - 1];
+    console.log("\nUPDATE THE PLUGIN NOW (the owner pressed Update now on the board). Run exactly this, in the project folder:");
+    console.log("  " + u.command);
+    console.log(`Then post the outcome on the board. If it worked: cockpit say "Agent on Browser is updated to ${u.latest}. It is in use the next time Claude Code starts in this project." --kind result   and tell the owner, in one line in the terminal, that restarting Claude Code once finishes the update. If the command failed: cockpit say "<what it printed, in one sentence>" --kind problem. Run no other command for this request.`);
+  }
   if (messages.length) {
     console.log("\nMESSAGE FROM THE OWNER (typed on the board, through the owner's own inbox). These are the owner's words:");
     messages.forEach((m) => console.log("  > " + safe(m, 700)));
@@ -399,7 +428,9 @@ function goalsText(rec, { brief = false, width = 78 } = {}) {
   for (const g of rec.goals) {
     const mine = rec.cards.filter((c) => c.g === g.n), d = mine.filter((c) => c.st === "DONE").length;
     const tally = mine.length && d === mine.length ? "done" : `${d} of ${mine.length} done`;
-    L.push(`  GOAL ${g.n}  ${cut(g.title, width - 24)}`.padEnd(width - tally.length) + tally);
+    const name = wrap(g.title, width - 12 - tally.length - 2, "");
+    L.push(`  GOAL ${g.n}  ${name[0]}`.padEnd(width - tally.length) + tally);
+    name.slice(1).forEach((l) => L.push("          " + l));
     if (g.sub) L.push(...wrap(g.sub, width - 10, "          "));
     if (!brief) for (const c of mine) {
       const what = c.st === "DONE" ? "done" : c.st === "START" || c.st === "DOING" ? "in progress" : c.own === "human" ? "yours" : c.gate && c.gate !== "-" ? "needs your yes" : "";
@@ -620,6 +651,8 @@ const setConfig = (change) => withWriteLock(() => { const cfg = JSON.parse(fs.re
 function openInBrowser(url) {
   if (!BOARD_URL.test(url)) throw new Error("that is not a board's address (https://claude.ai/artifact/...): nothing was opened");
   if (process.env.COCKPIT_NO_OPEN) { console.log("Not opened (COCKPIT_NO_OPEN is set): " + url); return; }
+  const E = process.env, noScreen = !!(E.CLAUDE_CODE_REMOTE || E.CODESPACES || E.SSH_CONNECTION || E.SSH_TTY) || (process.platform === "linux" && !E.DISPLAY && !E.WAYLAND_DISPLAY) || (process.platform !== "win32" && fs.existsSync("/.dockerenv"));
+  if (noScreen) { console.log("This session has no screen of its own, so nothing was opened. Give the person this link to open in their browser: " + url); return; }
   const [bin, args] = process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
   try {
     const child = spawn(bin, args, { detached: true, stdio: "ignore", windowsHide: true });
@@ -656,7 +689,7 @@ function lint() {
   const md = fs.readFileSync(RECORD, "utf8"), rec = parseLaunch(md);
   rec.errors.forEach((e) => console.log("ERROR  " + e));
   rec.warnings.forEach((w) => console.log("WARN   " + w));
-  const f = planLint({ ...rec, finish: CFG.LAUNCH });
+  const f = planLint({ ...rec, finish: CFG.LAUNCH }, { first: CFG.PLANNING || CFG.PLAN === "draft" });
   f.forEach((x) => console.log((x.level === "error" ? "ERROR  " : "WARN   ") + x.text));
   const errors = rec.errors.length + f.filter((x) => x.level === "error").length;
   const warns = rec.warnings.length + f.filter((x) => x.level === "warn").length;

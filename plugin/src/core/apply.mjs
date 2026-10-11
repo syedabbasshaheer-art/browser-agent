@@ -69,6 +69,17 @@ export function applyDecision(md, d, { date = new Date().toISOString().slice(0, 
       });
       change = { type: "card.moved", card: a.card, from: a.from, to: a.to, ...(a.undo ? { undo: true } : {}) };
       break;
+    case "card.close":
+      // The owner's word is the evidence, and the card says whose word it is. Only the owner's request reaches here.
+      if (!owner) throw new Error("only the owner closes a card on their own word");
+      if (a.why !== "done" && a.why !== "unneeded") throw new Error("a card is closed as done or as unneeded");
+      editRow(a.card, (c) => {
+        if (c[1] === "DONE" || c[1] === "START") throw refusal(`Card ${a.card} is ${c[1] === "DONE" ? "already done" : "being worked on"}.`);
+        c[1] = "DONE";
+        c[7] = c[7] + (a.why === "done" ? ` • Verified: the owner said on the board on ${stamp} that this was already done.` : ` • Verified: closed by the owner on the board on ${stamp} as not needed. Nothing was made for it.`);
+      });
+      change = { type: "card.moved", card: a.card, from: a.from, to: "DONE", closed: a.why };
+      break;
     case "card.note":
       addNote(a.card, a.text);
       change = { type: "card.noted", card: a.card };

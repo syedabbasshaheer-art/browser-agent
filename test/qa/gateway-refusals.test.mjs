@@ -14,7 +14,7 @@ const refused = (a, c, re) => { const d = decide(a, c); assert.equal(d.ok, false
 test("gateway: the level each verb needs, written out by hand, matches the table", () => {
   // An independent list: a verb added to the table without a line here fails, and so does a lowered level.
   const NEEDS = { "card.move": "interact", "card.note": "interact", "card.edit": "owner", "card.add": "interact",
-    "task.start": "interact", "gate.approve": "owner", "plan.accept": "owner", "release.push": "owner", "question.answer": "owner",
+    "task.start": "interact", "gate.approve": "owner", "plan.accept": "owner", "release.push": "owner", "plugin.update": "owner", "card.close": "owner", "goal.set": "owner", "question.answer": "owner",
     "auto.set": "owner", "notes.add": "owner", "notes.remove": "owner", "message.send": "owner" };
   assert.deepEqual(Object.keys(VERBS).sort(), Object.keys(NEEDS).sort(), "every verb is listed here");
   for (const [verb, need] of Object.entries(NEEDS)) assert.equal(VERBS[verb].level, need, verb);
@@ -25,7 +25,7 @@ test("gateway: the level each verb needs, written out by hand, matches the table
 test("gateway: every verb is refused below its level, and a viewer can do nothing", () => {
   const sample = { "card.move": { card: "1.2", to: "DOING" }, "card.note": { card: "1.2", text: "x" }, "card.edit": { card: "1.2", title: "T" },
     "card.add": { goal: 1, title: "New card", owner: "agent" }, "task.start": { card: "1.2" }, "gate.approve": { card: "1.3" },
-    "plan.accept": {}, "release.push": {}, "question.answer": { card: "1.2", qid: "q7", text: "Yes" },
+    "plan.accept": {}, "release.push": {}, "plugin.update": {}, "card.close": { card: "1.2", why: "done" }, "goal.set": { goal: 1, to: "aside" }, "question.answer": { card: "1.2", qid: "q7", text: "Yes" },
     "auto.set": { paused: true }, "notes.add": { section: "Preferences", text: "Say Agent" }, "notes.remove": { id: "n1" }, "message.send": { text: "Start card 1.3 next." } };
   for (const verb of Object.keys(VERBS)) {
     const a = { verb, ...sample[verb] }, need = VERBS[verb].level, plan = verb === "plan.accept" ? "draft" : "accepted";
