@@ -11,7 +11,7 @@
 
 A plugin for [Claude Code](https://claude.com/claude-code) &nbsp;·&nbsp; one command to install &nbsp;·&nbsp; no server, no account, no dependencies
 
-[Install](#install) &nbsp;·&nbsp; [What happens next](#start) &nbsp;·&nbsp; [Where it works](#where-it-works) &nbsp;·&nbsp; [Update](#update-or-remove) &nbsp;·&nbsp; [Questions](#questions) &nbsp;·&nbsp; [What changed](CHANGELOG.md)
+[Install](#install) &nbsp;·&nbsp; [What happens next](#start) &nbsp;·&nbsp; [When to use it](#when-to-use-it) &nbsp;·&nbsp; [How to read the board](#how-to-read-the-board) &nbsp;·&nbsp; [Where it works](#where-it-works) &nbsp;·&nbsp; [Update](#update-or-remove) &nbsp;·&nbsp; [Questions](#questions) &nbsp;·&nbsp; [What changed](CHANGELOG.md)
 
 **Install it:** open a terminal in your project's folder and paste this one line. [More about installing](#install)
 
@@ -191,6 +191,39 @@ sequenceDiagram
 If you installed without starting, the first session greets you with what the plugin gives and the one thing to type, `/browser-agent`. Later sessions remind you in one line until the project has a board. You never have to remember the command: "set up my board" does the same.
 
 **One thing to know:** the page cannot do work by itself. Your requests wait until a Claude Code session is open in the project, and the page always tells you whether one is.
+
+## When to use it
+
+| Use it when | Why it helps |
+|---|---|
+| The work will take more than one sitting | Tomorrow's session starts from the board, not from an empty conversation |
+| You are not sure what to do next | The first plan is written from your own folder: goal 1 is your next step, and the goals after it show where the work could go |
+| The agent works while you do something else | Its steps arrive on the page, and its questions wait at the top with their answers one press away |
+| You want to check before you trust | A card closes only with a written line saying what was observed |
+| Someone else needs to follow along | Share the page: they can look, add a note, and ask for a ready card to be started |
+| The folder holds no code | Videos, a manuscript, spreadsheets, notes: the plan is written in that field's own words |
+
+It is more than you need for a question, a one-line fix, or anything finished in a single sitting.
+
+## How to read the board
+
+Five pages, one job each. A first plan opens on **Goals**; after you accept it, the board opens on **Live**.
+
+| Page | The question it answers | What you do there |
+|---|---|---|
+| **Goals** | What is the plan, and do I agree with it? | Accept a goal or set it aside. Mark a card **Already done** or **Not needed**. Open a goal to read its cards |
+| **Live** | What is happening right now, and is anything waiting for me? | Read the agent's steps as they arrive. Answer its question with one press. Type a message |
+| **Board** | What is ready, what is in progress, what is done? | Move a ready card to In progress to hand it to the agent. Your cards and the agent's sit in separate lanes |
+| **Path** | What waits on what? | Follow the lines from a card to the cards it unblocks |
+| **Decisions** | What was decided, what was assumed, what could go wrong? | Read why the plan looks the way it does |
+
+Three things are the same on every page:
+
+- **A card** has a number (2.3 is the third card of goal 2), a title, who does it (you or the agent), and a state: Backlog, Ready, In progress, Blocked or Done.
+- **Needs you**, at the top, lists everything that waits for you and nothing else.
+- **Your requests** shows each thing you pressed with three stops and the time at each: saved, the agent told, applied.
+
+<img src="docs/images/path.png" alt="The Path: cards joined by lines that show what waits on what" width="100%">
 
 ## Where it works
 
