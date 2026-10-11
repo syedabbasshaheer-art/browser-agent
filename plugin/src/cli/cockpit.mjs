@@ -38,7 +38,7 @@ import path from "node:path";
 import { parseLaunch } from "../core/parse.mjs";
 import { computeBoard } from "../core/engine.mjs";
 import { build, digest, FILES } from "../build/build.mjs";
-import { spawnSync } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import * as CFG from "../build/config.mjs";
 import { decide, decideAuto, cleanText, requestMeta, safe, VERBS, LEVELS } from "../core/gateway.mjs";
@@ -62,7 +62,7 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 const opt = (k, d) => { const i = argv.indexOf("--" + k); return i > 0 ? (argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : true) : d; };
 const today = () => new Date().toISOString().slice(0, 10);
-const NEEDS_COCKPIT = ["build", "status", "lint", "inbox", "sync", "events", "say", "ask", "answer", "turn-end", "next", "pack", "tidy", "heartbeat", "remember", "push", "feed"];
+const NEEDS_COCKPIT = ["build", "status", "lint", "link", "open", "planned", "inbox", "sync", "events", "say", "ask", "answer", "turn-end", "next", "pack", "tidy", "heartbeat", "remember", "push", "feed"];
 
 // Where an action was written decides its level (the page database's rules enforce who can write
 // there). actions/: Contributors and up. approvals/: the owner only.
@@ -559,8 +559,11 @@ function init() {
   };
   const cfg = JSON.parse(fs.readFileSync(path.join(TEMPLATES, "config.json"), "utf8"));
   cfg.title = typeof opt("title") === "string" ? opt("title") : path.basename(root);
+  // --planning: the first run shows a placeholder at once and says the plan is being written (see `planned`).
+  const planning = opt("planning", false) === true;
+  if (planning) cfg.planning = true;
   put(".cockpit/config.json", JSON.stringify(cfg, null, 2) + "\n");
-  put(".cockpit/BOARD.md", fs.readFileSync(path.join(TEMPLATES, "BOARD.md"), "utf8"));
+  put(".cockpit/BOARD.md", fs.readFileSync(path.join(TEMPLATES, planning ? "BOARD.planning.md" : "BOARD.md"), "utf8"));
   put(MEMORY_FILES.notes, fs.readFileSync(path.join(TEMPLATES, "NOTES.md"), "utf8")); // the owner's notes for the agent: three empty headings
   // .gitignore: append only the lines that are missing.
   const gi = path.join(root, ".gitignore"), want = fs.readFileSync(path.join(TEMPLATES, "gitignore.txt"), "utf8").split(/\r?\n/).filter(Boolean);
@@ -575,6 +578,44 @@ function init() {
   process.stdout.write(r.stdout); process.stderr.write(r.stderr);
   if (r.status !== 0) { process.exitCode = r.status || 1; return; }
   console.log("Next: publish " + CFG.OUT + " with the Artifact tool, then put its link in .cockpit/config.json \"artifact\".");
+}
+
+// ── link, open, planned: the three small steps of a first run that are not the agent's judgement ──
+const BOARD_URL = /^https:\/\/claude\.ai\/(?:code\/)?artifact\/[A-Za-z0-9-]{6,80}$/;
+const setConfig = (change) => withWriteLock(() => { const cfg = JSON.parse(fs.readFileSync(CFG.CONFIG_FILE, "utf8")); change(cfg); writeAtomic(CFG.CONFIG_FILE, JSON.stringify(cfg, null, 2) + "\n"); });
+// Opens the board in the person's own browser. Only a claude.ai artifact address is ever opened.
+function openInBrowser(url) {
+  if (!BOARD_URL.test(url)) throw new Error("that is not a board's address (https://claude.ai/artifact/...): nothing was opened");
+  if (process.env.COCKPIT_NO_OPEN) { console.log("Not opened (COCKPIT_NO_OPEN is set): " + url); return; }
+  const [bin, args] = process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
+  try {
+    const child = spawn(bin, args, { detached: true, stdio: "ignore", windowsHide: true });
+    child.on("error", () => console.log("The browser could not be opened from here. Open this address yourself: " + url));
+    child.unref();
+    console.log("Opened in your browser: " + url);
+  } catch { console.log("The browser could not be opened from here. Open this address yourself: " + url); }
+}
+function link(url) {
+  if (!url || !BOARD_URL.test(url)) throw new Error("link needs the board's address, as the Artifact tool returned it: cockpit link https://claude.ai/artifact/... [--open]");
+  setConfig((cfg) => { cfg.artifact = url; });
+  console.log("The board's address is saved in the settings.");
+  if (opt("open", false)) openInBrowser(url);
+}
+function openBoard() {
+  if (!BOARD_URL.test(CFG.ARTIFACT_URL)) throw new Error("the board is not published yet, so there is nothing to open");
+  openInBrowser(CFG.ARTIFACT_URL);
+}
+// The plan has replaced the placeholder: stop saying it is being written, and check it.
+function planned() {
+  if (fs.readFileSync(path.join(CFG.ROOT, CFG.RECORD), "utf8").includes("This is the placeholder shown while the agent writes the real plan")) throw new Error("the record still holds the placeholder: write the plan into " + CFG.RECORD + " first. Nothing was changed.");
+  setConfig((cfg) => { delete cfg.planning; cfg.plan = "draft"; });
+  const self = fileURLToPath(import.meta.url), env = { ...process.env, COCKPIT_ROOT: CFG.ROOT };
+  for (const c of ["lint", "build"]) {
+    const r = spawnSync(process.execPath, [self, c], { cwd: CFG.ROOT, env, encoding: "utf8" });
+    process.stdout.write(r.stdout); process.stderr.write(r.stderr);
+    if (r.status !== 0) { process.exitCode = r.status || 1; console.log("The plan has findings: fix them in " + CFG.RECORD + ", then run lint and build again before publishing."); return; }
+  }
+  console.log("The plan is ready and still a draft. Next: publish " + CFG.OUT + " to the board's address, then say on the board that the plan is ready.");
 }
 
 // ── lint: is this plan good enough to show a person? Exit 1 on any error; warnings are listed too. ──
@@ -809,6 +850,9 @@ try {
   else if (cmd === "build") { const r = build({ write: true }); if (!r.ok) { r.rec.errors.forEach((e) => console.error("ERROR " + e)); process.exitCode = 1; } else console.log("Built " + CFG.OUT + " #" + r.hash + "\n" + digest(r)); }
   else if (cmd === "status") status();
   else if (cmd === "lint") lint();
+  else if (cmd === "link") link(argv.slice(1).find((a) => !a.startsWith("--")));
+  else if (cmd === "open") openBoard();
+  else if (cmd === "planned") planned();
   else if (cmd === "inbox") { const d = opt("from"); if (!d || d === true) throw new Error("inbox needs --from <export dir>"); inbox(d); }
   else if (cmd === "sync") { const d = opt("from"); if (!d || d === true) throw new Error("sync needs --from <export dir>"); sync(d); }
   else if (cmd === "events") showEvents();
@@ -828,5 +872,5 @@ try {
   else if (cmd === "push") push();
   else if (cmd === "feed") feed();
   else if (cmd === "verbs") Object.entries(VERBS).forEach(([v, s]) => console.log(`${v.padEnd(14)} level ${s.level.padEnd(9)} risk ${s.risk.padEnd(7)} ${s.mode.padEnd(8)} args ${s.args.concat((s.optional || []).map((x) => x + "?")).join(", ")}`));
-  else { console.log("usage: cockpit.mjs init [--title T] | build | status | inbox|sync --from <dir> | events [--since N] [--consumer NAME --commit] [--follow] | say <text> [--card ID] [--step i/n] [--kind K] [--next 'A | B'] | answer <text> [--to ACTION] | ask <question> --card ID [--topic key] [--choices A,B] | turn-end <text> --next <text> | push [--sent N] | next [--start] | pack [--json] | remember decision|state <text> | tidy [--check] | heartbeat [--status] | lint | feed [--version N] | verbs"); process.exitCode = 2; }
+  else { console.log("usage: cockpit.mjs init [--title T] [--planning] | link <address> [--open] | open | planned | build | status | inbox|sync --from <dir> | events [--since N] [--consumer NAME --commit] [--follow] | say <text> [--card ID] [--step i/n] [--kind K] [--next 'A | B'] | answer <text> [--to ACTION] | ask <question> --card ID [--topic key] [--choices A,B] | turn-end <text> --next <text> | push [--sent N] | next [--start] | pack [--json] | remember decision|state <text> | tidy [--check] | heartbeat [--status] | lint | feed [--version N] | verbs"); process.exitCode = 2; }
 } catch (e) { console.error("cockpit: " + e.message); process.exitCode = 1; }

@@ -12,6 +12,8 @@
     "artifact": { "type": "string", "default": "", "description": "The published board's claude.ai link. Empty until the first publish; Claude fills it in." },
     "harness": { "enum": ["claude", "local"], "default": "claude", "description": "Which adapter speaks to the agent (src/adapters/)." },
     "plan": { "enum": ["draft", "accepted"], "default": "accepted", "description": "draft = the owner has not accepted the plan yet: no card can start or close. init and the plan command set draft; Accept plan on the board sets accepted." },
+    "planning": { "type": "boolean", "default": false, "description": "true while the first plan is still being written: the page shows a placeholder, says so, and offers no Accept. `init --planning` sets it; `planned` removes it." },
+    "updates": { "type": "boolean", "default": true, "description": "false turns off this project's notice that a newer version of the plugin is ready." },
     "finish": { "type": ["string", "null"], "default": null, "description": "The card whose dependency tree is the finish path, e.g. \"1.5\". null = no finish path." },
     "wip": { "type": "object", "properties": { "human": { "type": "integer", "minimum": 0 }, "agent": { "type": "integer", "minimum": 0 } }, "default": { "human": 2, "agent": 3 }, "description": "Cards each owner can run at once." },
     "auto": {

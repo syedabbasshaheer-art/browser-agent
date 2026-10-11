@@ -1,6 +1,6 @@
 {
   "name": "browser-agent",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Agent on Browser: see your project as a board in your browser, and steer your AI agent from it. A plugin for Claude Code.",
   "type": "module",
   "license": "MIT",

@@ -28,6 +28,10 @@ const pick = (key, dflt) => process.env["COCKPIT_" + key.toUpperCase()] ?? J[key
 export const PROJECT_CONFIG = J;
 // "draft": a plan the owner has not accepted yet. Cards cannot start or close until they accept it on the board.
 export const PLAN = CONFIG_ERROR || pick("plan", "accepted") === "draft" ? "draft" : "accepted";
+// "planning": true while the first plan is still being written: the page shows a placeholder and says so.
+export const PLANNING = !CONFIG_ERROR && J.planning === true;
+// "updates": false turns off the notice that a newer version of the plugin is ready.
+export const UPDATES = J.updates !== false;
 // The owner's prompts are private. Only when this is true does the page's feed carry their words.
 export const LOG_PROMPTS = !!(J.hooks && J.hooks.logPrompts === true);
 // The agent's own replies go to the Live feed only when the project says so: they are written for the owner,

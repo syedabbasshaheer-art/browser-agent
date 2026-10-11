@@ -20,6 +20,17 @@ import { applyTheme } from "./page/theme.mjs";
 import { append as appendEvent, read as readEvents, lastOffset } from "../events/events.mjs";
 import { buildFeed } from "../events/feed.mjs";
 import { parseNotes, NOTE_SECTIONS, FILES as MEMORY_FILES } from "../core/memory.mjs";
+import { VERSION, newer, UPDATE_COMMAND } from "../core/update.mjs";
+
+// A newer version a session heard of (written by the session-start hook), or null. Read at build time, so the
+// notice goes as soon as the running code is that version.
+function updateNotice() {
+  try {
+    if (!CFG.UPDATES) return null;
+    const u = JSON.parse(fs.readFileSync(path.join(CFG.ROOT, CFG.LOCAL, "update.json"), "utf8"));
+    return newer(u.latest, VERSION) ? { have: VERSION, latest: String(u.latest), command: UPDATE_COMMAND } : null;
+  } catch { return null; }
+}
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)); // the code: template and themes only
 export const ROOT = CFG.ROOT;                               // the project: record, page, local state
@@ -179,7 +190,7 @@ export function build({ write = true } = {}) {
     WIP: CFG.WIP, LAUNCH: CFG.LAUNCH, title: CFG.TITLE, repo: repoUrl(),
     liveWord: /noindex|hidden|not findable/i.test(live) ? "Hidden" : liveUrl === "#" ? "Not yet" : "Public",
     liveNote: (live.split(". ")[0] || "No Live row in the record").replace(/[.]$/, "") + ".",
-    tile: CFG.TILE ? CFG.TILE.label : "", record: CFG.RECORD, plan: CFG.PLAN,
+    tile: CFG.TILE ? CFG.TILE.label : "", record: CFG.RECORD, plan: CFG.PLAN, planning: CFG.PLANNING, update: updateNotice(),
     rows: (rowsTxt.match(/[\d,]+/) || ["?"])[0],
     rowsNote: rowsTxt.replace(/^[\d,]+\s*—?\s*/, "") || "From the record",
   };

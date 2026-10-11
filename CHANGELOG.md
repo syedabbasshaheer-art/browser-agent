@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.8
+
+- One pasted line installs the plugin, starts Claude Code and asks for the board.
+- The board opens in your browser first, in about a minute, and says "Your plan is being written". The plan fills in behind it, step by step on the Live page.
+- Nothing is asked in the terminal. What the agent had to assume becomes a question on the board, answered with one click.
+- The welcome says what the board gives and how to start, and a one-line reminder returns in new sessions until the project has a board.
+- You are told when a newer version is ready: one line when a session starts, and an "Update ready" item in the board's Inbox.
+- New commands for the first run: `init --planning`, `link <address> --open`, `open`, `planned`.
+
 ## 0.0.7
 
 - A plugin installed inside a running session now gives its welcome on the first message, once.

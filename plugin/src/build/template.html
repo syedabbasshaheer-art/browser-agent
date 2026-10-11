@@ -222,6 +222,15 @@ function maxOffset(){for(var i=0;i<L.length;i++)if(L[i].offset!=null)return +L[i
 var MOVE_TO={BACKLOG:"Backlog",DOING:"Ready",START:"In progress",DONE:"Done",BLOCKED:"Blocked"};
 var DRAFT_WHY="The plan is a draft. Accept the plan first; then cards can start.";
 function isDraft(){return S.plan==="draft"}
+/* The first plan is still being written: the cards are a placeholder, so there is nothing to accept yet. The page
+   learns that the plan is ready from the agent's own line, and then asks for a reload. */
+function isPlanning(){return !!BOARD.planning}
+function planReady(){return L.some(function(e){return +e.offset>BUILT_OFF&&/^Your plan is ready/.test(String(e.text||""))})}
+var PLANNING_TXT="The agent is reading your project and writing your plan. The cards below are a placeholder. Each step appears on the Live page as it finishes. It takes a few minutes, and you need to do nothing until it is ready.";
+var PLANNED_TXT="Your plan is ready. Reload this page to see it, then read it and accept it.";
+function planningText(){return planReady()?PLANNED_TXT:PLANNING_TXT}
+/* a newer version of the plugin, heard of by a session on the owner's computer */
+function updateText(){var u=BOARD.update;return u?"Version "+u.latest+" of Agent on Browser is ready. This board was built with "+u.have+". In a terminal, run: "+u.command+" and then restart Claude Code.":""}
 /* The plan stops being a draft the moment that is known: an applied plan.accept in the owner's inbox (sent in this
    visit, or decided after this page was built), or the line that says the plan was accepted. */
 var BUILT_AT=String(EMBFEED.updatedAt||"");
@@ -359,8 +368,10 @@ function startCard(id){
    and requests the gateway refused, each with its reason. ── */
 function attnItems(){
   var a=[],openBtn=function(id){return '<button class="btn btn-tonal btn-xs" data-act="open" data-id="'+esc(id)+'">Open card</button>'};
-  if(isDraft())a.push({key:"draft",notice:true,kind:"Draft plan",draft:true,text:"This plan is a draft. Read it, add a note on any card that is wrong, then accept it. Nothing starts until you do.",why:S.draftWhy,
+  if(isPlanning())a.push({key:"draft",notice:true,kind:planReady()?"Your plan is ready":"Your plan is being written",draft:true,text:planningText(),btns:""});
+  else if(isDraft())a.push({key:"draft",notice:true,kind:"Draft plan",draft:true,text:"This plan is a draft. Read it, add a note on any card that is wrong, then accept it. Nothing starts until you do.",why:S.draftWhy,
     btns:'<button class="btn btn-filled btn-sm" data-act="accept" id="acceptplan">'+ic(I.check,16)+'Accept plan</button>'});
+  if(BOARD.update&&CAP.owner)a.push({key:"upd:"+BOARD.update.latest,kind:"Update ready",text:updateText(),btns:""});
   /* each card says WHY it needs you: a gate's yes, or a card that is yours to do */
   C.filter(function(c){return V.needsYou[c.id]}).forEach(function(c){var why=V.needsYou[c.id],can=why==="approval"&&c.own==="agent"&&CAP.db&&CAP.owner&&!startBlock(c)&&!pendingMoveOf(c.id).length;
     var ask=why==="question"&&slotQs().filter(function(q){return q.card===c.id})[0];
@@ -1122,7 +1133,9 @@ function needItems(){
     out.push({key:"b:"+c.id,kind:"blocked",card:c.id,cap:"Blocked",text:"“"+c.title+"” is blocked. Open it to read what it waits on.",btn:"Open it",open:true})});
   var halt=null;for(var hi=0;hi<L.length;hi++){var he=L[hi];if(/^The agent stopped while /.test(String(he.text||""))){halt=he;break}if(he.who==="Agent"&&(he.kind==="said"||he.say==="turn-end"))break}
   if(halt)out.unshift({key:"halt:"+halt.offset,kind:"stopped",cap:"The agent stopped",text:halt.text,btn:CAP.owner&&CAP.comments?"Ask the agent to continue":"",run:function(){wake()}});
-  if(isDraft())out.unshift({key:"draft",kind:"draft",cap:"Draft plan",text:"This plan is a draft. Read it, add a note on any card that is wrong, then accept it. Nothing starts until you do.",
+  if(BOARD.update&&CAP.owner&&!S.dismissed["upd:"+BOARD.update.latest])out.unshift({key:"upd:"+BOARD.update.latest,kind:"update",cap:"Update ready",text:updateText(),btn:"Dismiss",tonal:true,run:function(){S.dismissed["upd:"+BOARD.update.latest]=true;save();render()}});
+  if(isPlanning())out.unshift({key:"draft",kind:"draft",cap:planReady()?"Your plan is ready":"Your plan is being written",text:planningText(),btn:""});
+  else if(isDraft())out.unshift({key:"draft",kind:"draft",cap:"Draft plan",text:"This plan is a draft. Read it, add a note on any card that is wrong, then accept it. Nothing starts until you do.",
     btn:CAP.db&&CAP.owner?"Accept plan":"",run:acceptPlan,why:S.draftWhy||(CAP.db&&!CAP.owner?"Only the owner can accept the plan.":"")});
   return out;
 }
@@ -1202,6 +1215,7 @@ function askStatus(){
 /* the Now sentence, without "Last word …": what the block shows and what is announced when it changes */
 function nowSay(st){
   var k=st.k,sp;
+  if(isPlanning())return planReady()?"Your plan is ready. Reload this page to see it.":"The agent is writing your plan. Each step appears below as it finishes.";
   if(isDraft()&&k!=="working"&&k!=="quiet")return "The plan is a draft. Nothing starts until you accept it.";   /* a draft has one next step, and it is not a card */
   if(k==="working"){sp=stepOf(st.prog);return "The agent is on "+cidBtn(st.card)+(sp?", step "+sp.step+" of "+sp.of:"")+"."}
   if(k==="quiet")return "No word from the agent on "+cidBtn(st.card)+" for "+span(st.mins)+". It may have stopped.";
@@ -1779,7 +1793,7 @@ function paletteItems(){
    {t:"Zoom in",k:"+",run:function(){setZoom(10)},i:I.plus},{t:"Zoom out",k:"-",run:function(){setZoom(-10)},i:I.minus},{t:"Zoom: reset to 100%",k:"0",run:function(){setZoom(0)},i:I.search},
    {t:"How the agent works here",run:function(){setView("settings")},i:I.bolt},
    {t:"Keyboard shortcuts",k:"?",run:function(){S.dialog="keys"},i:I.key}];
-  if(S.plan==="draft")A.unshift({t:"Accept the plan",run:acceptPlan,i:I.check});
+  if(S.plan==="draft"&&!isPlanning())A.unshift({t:"Accept the plan",run:acceptPlan,i:I.check});
   var out=[];
   A.filter(function(a){return !q||a.t.toLowerCase().indexOf(q)>=0}).slice(0,q?20:8).forEach(function(a){out.push({g:"Actions",t:a.t,k:a.k,i:a.i,run:a.run})});
   D.goals.filter(function(g){return q&&("goal "+g.n+" "+g.title).toLowerCase().indexOf(q)>=0}).forEach(function(g){out.push({g:"Goals",t:"Goal "+g.n+": "+g.title,i:I.flag,run:function(){setGoal(g.n);setView("board");S.scrollGoal=true}})});

@@ -116,19 +116,15 @@ What it is, why it matters, the steps, the check, and the proof once it is done.
 
 ## Install
 
-**One command.** Open a terminal in your project's folder and paste:
+**One line.** Open a terminal in your project's folder and paste:
 
 ```bash
-claude plugin install browser-agent --marketplace syedabbasshaheer-art/browser-agent --scope project
+claude plugin install browser-agent --marketplace syedabbasshaheer-art/browser-agent --scope project; claude "set up my board"
 ```
 
-Then start Claude Code as you always do:
+It installs the plugin, starts Claude Code and asks for your board. **Your board opens in your browser in about a minute**, and the plan fills in behind it. The only thing you are asked for is to accept the plan.
 
-```bash
-claude
-```
-
-Nothing to restart, nothing to configure. You need [Claude Code](https://claude.com/claude-code) 2.1.275 or newer and Node 18 or newer.
+Nothing to restart, nothing to configure. You need [Claude Code](https://claude.com/claude-code) 2.1.275 or newer and Node 18 or newer. In the old Windows Command Prompt, write `&&` in place of `;`.
 
 <details>
 <summary><b>Already inside Claude Code?</b> &nbsp;Other ways to install</summary>
@@ -137,7 +133,8 @@ Nothing to restart, nothing to configure. You need [Claude Code](https://claude.
 
 | Situation | Do this |
 |---|---|
-| A session is already open | Type `/plugin install browser-agent --marketplace syedabbasshaheer-art/browser-agent`, choose a scope, and it loads without a restart |
+| A session is already open | Type `/plugin install browser-agent --marketplace syedabbasshaheer-art/browser-agent`, choose a scope, and it loads without a restart. Then type `/browser-agent` |
+| You would rather do it in two steps | Paste the line up to the `;`, start `claude`, and type `/browser-agent` when the welcome appears |
 | You want it in every project on this computer | Leave out `--scope project` |
 | An older Claude Code | Two commands: `claude plugin marketplace add syedabbasshaheer-art/browser-agent`, then `claude plugin install browser-agent@browser-agent --scope project` |
 | You only want to try it | `git clone` this repository, then `claude --plugin-dir <the folder>`: loaded for that one session, nothing installed |
@@ -146,11 +143,15 @@ Nothing to restart, nothing to configure. You need [Claude Code](https://claude.
 
 ## Start
 
-The first time you open Claude Code after the install, it tells you what to do:
+The pasted line already asked for your board. This is what happens next, and you only watch:
 
-> **Agent on Browser is installed.** To see this project as a board in your browser, type `/browser-agent` or just say "set up my board". This line is shown once.
-
-Do either. That is the only command there is, and you do not even have to remember it.
+```text
+Setting up your board
+  [x] 1  A board opens in your browser          about a minute
+  [ ] 2  The agent reads your project
+  [ ] 3  It writes the plan: goals and cards    a few minutes
+  [ ] 4  You accept the plan on the board       the only thing it needs from you
+```
 
 ```mermaid
 sequenceDiagram
@@ -159,59 +160,17 @@ sequenceDiagram
     participant Agent as Agent (Claude Code)
     participant Page as Your page (claude.ai)
     You->>Agent: "set up my board"
+    Agent->>Page: publishes a placeholder board, and opens it in your browser
+    Note over Page: "Your plan is being written"
     Agent->>Agent: reads your project folder
-    Agent->>You: asks only what it could not find (3 or 4 questions)
-    Agent->>Agent: writes the plan: goals, cards, what waits on what
-    Agent->>Page: publishes a private page
-    Agent->>You: here is your link
+    Agent->>Page: each step appears on the Live page
+    Agent->>Page: the plan: goals, cards, what waits on what
+    Agent->>Page: what it had to assume, as questions with one-click answers
     You->>Page: read the plan, press Accept plan
     Note over You,Page: Nothing starts before you accept.
 ```
 
-## Use it
-
-Everything can be done on the page or said in plain words. Pick whichever is nearer.
-
-| You want to | On the page | Or say to the agent |
-|---|---|---|
-| See what is happening | Open the link. The Live page opens first | "what is on the board" |
-| Start a card | Drag it to In progress, or press Start | "start card 1.5" |
-| Ask the agent something | The Inbox, top right, or the Chat tab on a card | Just ask |
-| Answer the agent's question | Press an answer under Actions | Just answer |
-| Approve a step that costs money or cannot be undone | Press Approve on the card | "approve 2.2" |
-| Add a card | The Act button, bottom right | "add a card for the launch post" |
-| Give a standing instruction | Settings, Notes for the agent | "from now on, run the tests before every commit" |
-| Find the link again | It is shown each time a session starts | `/browser-agent` |
-
-## How it works
-
-```mermaid
-flowchart LR
-    subgraph computer["Your computer"]
-        direction TB
-        plan["<b>The plan</b><br/>one markdown file<br/>in your project"]
-        agent["<b>The agent</b><br/>a Claude Code session"]
-        rules["<b>The gatekeeper</b><br/>checks every request"]
-    end
-    subgraph browser["Your browser"]
-        page["<b>The page</b><br/>private, on claude.ai"]
-    end
-    plan -- "is built into" --> page
-    page -- "you ask: move, start,<br/>approve, answer, message" --> rules
-    rules -- "allowed requests only" --> agent
-    agent -- "edits" --> plan
-    agent -- "reports each step" --> page
-```
-
-Five ideas hold it together:
-
-| | Idea | What it means for you |
-|---|---|---|
-| 1 | **The plan is the truth.** | Goals, cards and their state live in one markdown file in your project. You can read it, edit it and commit it. |
-| 2 | **The page is a view.** | It holds no state of its own, so it cannot drift away from the plan. |
-| 3 | **The page asks, the agent decides.** | Every button sends a request from a fixed list. A gatekeeper checks it: a real card, the right person, nothing started before what it waits on. |
-| 4 | **Done needs proof.** | A card closes only with a written line saying what was observed. |
-| 5 | **Checks at the end of every turn.** | Small scripts compare what the agent did with what the plan says, and hold the turn if they disagree. |
+If you installed without starting, the first session greets you with what the plugin gives and the one thing to type, `/browser-agent`. Later sessions remind you in one line until the project has a board. You never have to remember the command: "set up my board" does the same.
 
 **One thing to know:** the page cannot do work by itself. Your requests wait until a Claude Code session is open in the project, and the page always tells you whether one is.
 
@@ -232,6 +191,7 @@ flowchart TB
 ```
 
 - **No server and no account of its own.** It is plain files run by Node. Nothing is sent anywhere except the page you publish from your own Claude account.
+- **One question to GitHub a day.** A new session reads this repository's public version number, at most once in twenty hours, to tell you when a newer version is ready. Nothing about you or your project is sent. Turn it off with the environment variable `BROWSER_AGENT_UPDATE_CHECK=off`.
 - **Nothing runs at install time.** A Claude Code plugin has no install script.
 - **Silent where you did not ask for it.** In a project with no board, it writes nothing.
 - **It stays inside the project.** A setting that points outside the project's folder is refused.
@@ -241,7 +201,7 @@ flowchart TB
 
 | Want to | Command |
 |---|---|
-| Get the newest version | `claude plugin update browser-agent@browser-agent` |
+| Get the newest version | `claude plugin update browser-agent@browser-agent`, then restart Claude Code. You are told when one is ready: one line when a session starts, and an "Update ready" item in the board's Inbox |
 | Turn it off for a while | `claude plugin disable browser-agent@browser-agent` |
 | Remove it | `claude plugin uninstall browser-agent@browser-agent --scope project` |
 | Remove a project's board | Delete the project's `.cockpit/` folder, and the page from your claude.ai artifacts |
@@ -279,7 +239,7 @@ Nothing beyond your normal Claude Code use. Each message to the agent carries a 
 | What you see | What to do |
 |---|---|
 | `/browser-agent` is not in the list | The plugin is not loaded in this session. Type `/reload-plugins`, or close and reopen `claude` |
-| No welcome line | It is shown once per project. Type `/browser-agent` anyway |
+| No welcome line | The full welcome is shown once per project, then a one-line reminder in the next five new sessions. Type `/browser-agent` anyway |
 | The repository cannot be found or cloned | Git on this computer is not signed in to an account that can read it. Run `gh auth login`, then try again |
 | The page says no agent is running | Open `claude` in the project. Requests made on the page are applied then |
 | The page looks out of date | Say "publish my board" |

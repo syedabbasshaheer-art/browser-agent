@@ -7,8 +7,8 @@ The result is a **draft**: the user reviews it on the board and accepts it there
 
 ## 0. Make sure the cockpit is on
 
-If the project has no `.cockpit/config.json`, run `node "$P/src/cli/cockpit.mjs" init` first. It creates the config
-and a starter record with five sample cards; you will replace those cards with the real plan.
+If the project has no `.cockpit/config.json`, you are in a first run: follow `start` in SKILL.md, which opens a
+placeholder board (`init --planning`) before you come back here. You replace the placeholder's cards with the real plan.
 
 ## 1. Read the project first
 
@@ -23,22 +23,19 @@ Spend your effort here. A plan made from what is really in the folder beats one 
 Write down, for yourself: what the project is, who it is for, what "finished" would be, what is already done, what
 is clearly missing, and what you could not find out.
 
-## 2. Ask only what you could not find
+## 2. Do not ask before the board: assume, and ask on the board
 
-Ask three to six questions, all at once, with the AskUserQuestion tool. Offer choices; recommend one. Typical gaps:
+The person's first minutes belong to the board, not to a list of questions in the terminal. So do not use the
+AskUserQuestion tool here. For everything the folder does not answer (where data lives, what finished means, a
+price, a limit, a date, what is out of scope):
 
-- What does finished look like, and by when? (This becomes the finish card.)
-- What must the user decide, pay for or sign off themselves? (These become human cards with gates.)
-- What is out of scope?
-- Anything the folder contradicts itself about.
+- Take the most reasonable answer and write the plan with it.
+- Record it in the Decisions table starting with "Assumed:", so it is visible on the board.
+- Keep a list of the assumptions that would change the plan if they were wrong: four at most. Step 5 turns each
+  into a question on the board, with your assumption as the first choice.
 
-Never ask what the folder already answers. When a person is there, asking is not optional: anything you would
-otherwise assume (where data lives, what finished means, prices, limits, a date) is a question, with your best guess
-as the recommended choice. A plan built on silent assumptions sends the user to the board to find and undo them.
-
-Only if you truly cannot ask (a run with nobody there, or the question tool is not available), do not stop: take the
-most reasonable answer and record it in the Decisions table starting with "Assumed:", so the user can correct it on
-the board.
+Never ask what the folder already answers. If the person has already told you something in this conversation,
+that is an answer, not an assumption.
 
 ## 3. Write the plan into `.cockpit/BOARD.md`
 
@@ -136,10 +133,20 @@ node "$P/src/cli/cockpit.mjs" build
 phase with no end state. Fix all errors and all warnings, then run both again until they are clean. Do not publish a
 plan with findings.
 
-## 5. Publish it as a draft, and say so
+## 5. Publish it as a draft, say so, and ask on the board
 
-Set `"plan": "draft"` in `.cockpit/config.json`, then publish (the `publish` command in SKILL.md). Tell the user, in
-a few lines: the goals, how many cards, what you assumed, and that the board is a draft to review and accept there.
+1. `node "$P/src/cli/cockpit.mjs" planned`. It ends the "plan is being written" state, keeps the plan a draft, and
+   runs `lint` and `build` once more. (In a project that was never in that state, set `"plan": "draft"` in
+   `.cockpit/config.json` and run `build`.)
+2. Publish to the board's address (the `publish` command in SKILL.md).
+3. `say "Your plan is ready: N cards in G goals. Reload this page to see it, then accept it." --kind result`, and
+   send its batch.
+4. For each assumption on your list, at most four:
+   `ask "<the question, in one plain sentence>" --card <the card it changes> --topic <a short key> --choices "<your assumption>, <the alternative>, <another>"`.
+   Your assumption comes first. Send the batch each prints. They appear under Needs you; the answers arrive
+   through `inbox`, and you then correct the cards and the Decisions row.
+5. Tell the person, with the table in SKILL.md's `start`: the address, what to do on the board, what to leave to
+   you, and that nothing more is needed in the terminal.
 
 ## Keeping the plan alive
 
