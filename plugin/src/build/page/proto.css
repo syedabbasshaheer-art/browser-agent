@@ -1841,3 +1841,8 @@ textarea:focus-visible{border-color:var(--pri);box-shadow:0 0 0 1px var(--pri),v
 @media (hover:none){.gtri{opacity:1}}
 .pbcount{font-weight:700}
 @media (max-width:699px){.gsech{flex-wrap:wrap}.gopen{flex-wrap:wrap;gap:8px 12px;padding:12px}.gacts{padding:0 12px 12px 58px;flex-wrap:wrap}.gtri{margin-left:0;flex-basis:100%}}
+
+/* a request's three stops, each with its time (card 13.5) */
+.rstops{display:flex;flex-wrap:wrap;gap:2px 0;margin:2px 0 0;font-size:12.5px;line-height:18px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.rstops span+span::before{content:"\203A";margin:0 8px;color:var(--ink3)}
+.rstops span.on{color:var(--ink2)}

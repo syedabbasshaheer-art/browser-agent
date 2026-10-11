@@ -1,0 +1,70 @@
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* The opening page of a first run: small enough to publish in seconds. It shows the five steps and the
+   agent's lines as they arrive. The full board replaces it at the same address when goal 1 is written. */
+:root{--bg:#f6f7fb;--surface:#ffffff;--ink:#141926;--ink2:#3c4457;--ink3:#596175;--line:#e3e6ee;--pri:#1d2b6b;--on-pri:#ffffff;--dn:#125632;--sh:0 1px 2px rgba(20,25,38,.06),0 4px 14px rgba(20,25,38,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12151d;--surface:#1a1e29;--ink:#eef0f6;--ink2:#c7ccda;--ink3:#a3aabd;--line:#2c313f;--pri:#b9c5f5;--on-pri:#10152a;--dn:#9fdfb9;--sh:none}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12151d;--surface:#1a1e29;--ink:#eef0f6;--ink2:#c7ccda;--ink3:#a3aabd;--line:#2c313f;--pri:#b9c5f5;--on-pri:#10152a;--dn:#9fdfb9;--sh:none}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/24px Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.pg{max-width:720px;margin:0 auto;padding:32px 16px 48px;display:grid;gap:20px}
+h1{font-size:26px;line-height:32px;font-weight:700;margin:0;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--ink2)}
+.box{background:var(--surface);border-radius:16px;box-shadow:var(--sh);padding:20px}
+h2{font-size:16px;line-height:24px;font-weight:600;margin:0 0 10px}
+ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.st{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;color:var(--ink3)}
+.st i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:600;font-size:13px;background:var(--bg);color:var(--ink3)}
+.st.done{color:var(--ink2)}.st.done i{background:var(--dn);color:var(--surface)}
+.st.now{color:var(--ink);font-weight:600}.st.now i{background:var(--pri);color:var(--on-pri);animation:pu 1.6s ease-in-out infinite}
+@keyframes pu{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.st.now i{animation:none}}
+.ready{background:var(--pri);color:var(--on-pri);border-radius:16px;padding:16px 20px;font-weight:600}
+.ready span{display:block;font-weight:400}
+.ln{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:8px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.ln:first-of-type{border-top:0}
+.ln time{color:var(--ink3);font-size:13px;font-variant-numeric:tabular-nums}
+.none{color:var(--ink3);margin:0}
+.foot{color:var(--ink3);font-size:13px;line-height:20px;margin:0}
+</style>
+<div class="pg" lang="en">
+  <header><h1 id="ttl">__TITLE__</h1><p class="sub" id="sub">Your board is being set up. Nothing is asked of you yet: watch the steps below.</p></header>
+  <div class="ready" id="ready" role="status" hidden>Your board is ready.<span>Reload this page in your browser to open it.</span></div>
+  <section class="box" aria-label="The five steps"><h2>What is happening</h2><ol id="steps"></ol></section>
+  <section class="box" aria-label="What the agent has said"><h2>The agent's steps, as they happen</h2><div id="lines" aria-live="polite"><p class="none">The first line arrives when the agent starts reading your project.</p></div></section>
+  <p class="foot">This small page opens first so that you have something to look at within seconds. The full board, with your goals and cards, replaces it at this same address. Made with Agent on Browser.</p>
+</div>
+<script>
+(function(){
+"use strict";
+var STEPS=["A board opens in your browser","The agent reads your project, whatever it is made of","Goal 1 is on the board: your next step","The agent studies your field and writes the goals that follow","You decide on the board: accept, set aside, or mark as done"];
+var LINES={},READY=false;
+function $(id){return document.getElementById(id)}
+function hhmm(at){var d=new Date(at);if(isNaN(d))return "";return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function take(v){
+  if(!v||v.offset==null||isNaN(+v.offset)||v.text==null||!v.at)return;
+  if(v.who&&v.who!=="Agent")return;
+  LINES[+v.offset]=v;
+}
+function draw(){
+  var list=Object.keys(LINES).map(function(k){return LINES[k]}).sort(function(a,b){return b.offset-a.offset});
+  var done=1;
+  list.forEach(function(l){if(+l.of===5&&+l.step>done)done=+l.step;if(/^(Goal 1 is ready|Your plan is ready)/.test(String(l.text)))READY=true});
+  var ol=$("steps");ol.textContent="";
+  STEPS.forEach(function(t,i){var n=i+1,li=el("li","st"+(n<=done?" done":n===done+1?" now":""));li.appendChild(el("i","",n<=done?"✓":String(n)));li.appendChild(el("span","",t+(n<=done?"":n===done+1?": now":"")));ol.appendChild(li)});
+  $("ready").hidden=!READY;
+  if(READY)$("sub").textContent="The first part of your plan is written.";
+  var box=$("lines");if(!list.length)return;box.textContent="";
+  list.slice(0,40).forEach(function(l){var r=el("div","ln"),t=el("time","",hhmm(l.at));t.setAttribute("datetime",String(l.at));r.appendChild(t);r.appendChild(el("span","",String(l.text)));box.appendChild(r)});
+}
+draw();
+try{
+  if(window.claude&&typeof window.claude.use==="function")window.claude.use("db").then(function(db){
+    if(!db)return;
+    try{db.collection("live").onSnapshot(function(snap){try{(snap.docs||[]).forEach(function(x){var v=x.data&&x.data();if(x.id==="feed"){(v&&v.entries||[]).forEach(take)}else if(/^u[0-9]+$/.test(x.id))take(v)});draw()}catch(e){}},function(){})}catch(e){}
+  },function(){});
+}catch(e){}
+})();
+</script>

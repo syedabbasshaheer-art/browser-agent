@@ -25,7 +25,9 @@ export function loopClock({ events = [], sends = [], since = 0 } = {}) {
   const asked = new Map(ev.filter((e) => e.type === "claude.asked").map((e) => ["q" + e.offset, e]));
   const answer = [];
   for (const e of ev) if (e.type === "question.answered" && asked.has(e.qid)) { answer.push(secs(asked.get(e.qid).at, e.at)); asked.delete(e.qid); }
-  return { click: stat(click), feed: stat(feed), answer: stat(answer), open: asked.size };
+  const results = ev.filter((e) => e.type === "claude.said" && e.say === "result" && e.card);
+  const led = results.filter((e) => Array.isArray(e.replies) && e.replies.length).length;
+  return { click: stat(click), feed: stat(feed), answer: stat(answer), open: asked.size, results: { n: results.length, led } };
 }
 
 export function span(s) {
@@ -42,5 +44,6 @@ export function clockLines(c) {
     say(c.click, "1. You to the agent. A click on the board, until the agent took it"),
     say(c.feed, "2. The agent to the board. A line the agent logged, until it was on the board"),
     say(c.answer, "3. The agent to you. A question on the board, until you answered it") + (c.open ? ` ${c.open} still wait${c.open === 1 ? "s" : ""} for an answer.` : ""),
+    c.results && c.results.n ? `4. Results that end with your next move. ${c.results.led} of ${c.results.n} results on a card offered a reply to press.` : "4. Results that end with your next move: no result on a card yet.",
   ];
 }

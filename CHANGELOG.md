@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.12
+
+- A first run shows a page within seconds. The agent first publishes a small opening page, a few kilobytes, that shows the five steps and its lines as they arrive; the full board replaces it at the same address when goal 1 is written.
+- Each request shows where it is. Under Your requests, a request shows three stops with the time at each: saved, the agent told, applied.
+- The agent's lines reach the board sooner. The reminder to send comes after half a minute, and it carries the writes themselves, so sending is one step.
+- A result should end with your next move. The agent is told when a card's result offers no reply to press, and `clock` counts how many did.
+- The board is named like a project: a folder called `my-video_project` gives a board called My Video Project, and the agent can give it a better name.
+
 ## 0.0.11
 
 - You decide goal by goal. On the Goals page each goal has Accept and Set aside, and the top has Accept all goals. A goal set aside stays in the plan, none of its cards starts, and it can be brought back. Deciding the last goal accepts the plan.

@@ -39,8 +39,8 @@ test("a line is timed by the send that carried it; since leaves out what is olde
 
 test("nothing measured is said as such, never as zero", () => {
   const lines = clockLines(loopClock({}));
-  assert.equal(lines.length, 3);
-  lines.forEach((l) => assert.match(l, /nothing measured yet\./));
+  assert.equal(lines.length, 4);
+  lines.slice(0, 3).forEach((l) => assert.match(l, /nothing measured yet\./));
   assert.deepEqual(stat([NaN, -3]), { n: 0, median: null, worst: null });
   assert.equal(span(1), "1 second"); assert.equal(span(49), "49 seconds"); assert.equal(span(240), "4 minutes"); assert.equal(span(7200), "2 hours");
 });

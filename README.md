@@ -7,7 +7,11 @@
 
 ### See your project as a board in your browser. Steer your AI agent from it.
 
+**[github.com/syedabbasshaheer-art/browser-agent](https://github.com/syedabbasshaheer-art/browser-agent)**
+
 A plugin for [Claude Code](https://claude.com/claude-code) &nbsp;·&nbsp; one command to install &nbsp;·&nbsp; no server, no account, no dependencies
+
+[Install](#install) &nbsp;·&nbsp; [What happens next](#start) &nbsp;·&nbsp; [Where it works](#where-it-works) &nbsp;·&nbsp; [Update](#update-or-remove) &nbsp;·&nbsp; [Questions](#questions) &nbsp;·&nbsp; [What changed](CHANGELOG.md)
 
 **Install it:** open a terminal in your project's folder and paste this one line. [More about installing](#install)
 
@@ -130,7 +134,9 @@ What it is, why it matters, the steps, the check, and the proof once it is done.
 claude plugin install browser-agent --marketplace syedabbasshaheer-art/browser-agent --scope project; claude "set up my board"
 ```
 
-It installs the plugin, starts Claude Code and asks for your board. **Your board opens in your browser in about a minute**, and the plan fills in behind it. The only thing you are asked for is to accept the plan.
+It installs the plugin, starts Claude Code and asks for your board. **A page opens in your browser within a minute**, your first goal follows, and the rest of the plan fills in behind it. The only thing you are asked for is to decide on the plan.
+
+To pass it on, send this page's address: https://github.com/syedabbasshaheer-art/browser-agent
 
 Nothing to restart, nothing to configure. You need [Claude Code](https://claude.com/claude-code) 2.1.275 or newer and Node 18 or newer. In the old Windows Command Prompt, write `&&` in place of `;`.
 
@@ -155,11 +161,14 @@ The pasted line already asked for your board. This is what happens next, and you
 
 ```text
 Setting up your board
-  [x] 1  A board opens in your browser          about a minute
-  [ ] 2  The agent reads your project
-  [ ] 3  It writes the plan: goals and cards    a few minutes
-  [ ] 4  You accept the plan on the board       the only thing it needs from you
+  [x] 1  A board opens in your browser               about a minute
+  [ ] 2  The agent reads your project, whatever it is made of
+  [ ] 3  Goal 1 is on the board: your next step      the first thing to read
+  [ ] 4  The agent studies your field and writes the goals that follow
+  [ ] 5  You decide on the board: accept, set aside, or mark as done
 ```
+
+The folder does not have to hold code. A folder of videos, a manuscript, a set of spreadsheets or a pile of notes gets a plan in its own field's words.
 
 ```mermaid
 sequenceDiagram
@@ -168,19 +177,32 @@ sequenceDiagram
     participant Agent as Agent (Claude Code)
     participant Page as Your page (claude.ai)
     You->>Agent: "set up my board"
-    Agent->>Page: publishes a placeholder board, and opens it in your browser
-    Note over Page: "Your plan is being written"
+    Agent->>Page: publishes a small opening page, and opens it in your browser
+    Note over Page: the five steps, ticking as they finish
     Agent->>Agent: reads your project folder
-    Agent->>Page: each step appears on the Live page
-    Agent->>Page: the plan: goals, cards, what waits on what
+    Agent->>Page: goal 1, your next step, on the full board
+    Agent->>Agent: studies your field
+    Agent->>Page: the goals that follow, and what waits on what
     Agent->>Page: what it had to assume, as questions with one-click answers
-    You->>Page: read the plan, press Accept plan
-    Note over You,Page: Nothing starts before you accept.
+    You->>Page: accept a goal or set it aside, mark a card as already done
+    Note over You,Page: Nothing starts before you decide.
 ```
 
 If you installed without starting, the first session greets you with what the plugin gives and the one thing to type, `/browser-agent`. Later sessions remind you in one line until the project has a board. You never have to remember the command: "set up my board" does the same.
 
 **One thing to know:** the page cannot do work by itself. Your requests wait until a Claude Code session is open in the project, and the page always tells you whether one is.
+
+## Where it works
+
+| Where you run the agent | What works |
+|---|---|
+| **Claude Code in a terminal, on your own computer** | **Everything.** A press on the board reaches the agent, and the agent's lines reach the board, with nobody typing |
+| Claude Code desktop app, in a session on your own computer | Expected to be the same; not yet tried by us |
+| Claude Code in VS Code or JetBrains | The plan and the commands work. Publishing the page from there is not yet confirmed |
+| Claude Cowork, and sessions that run in the cloud | **Partly.** The board and the plan work. The board cannot wake the agent there, so after you press something on the board you say "check the board" in the chat |
+| Claude chat, in the browser or on a phone | Not yet: there is no project folder for the agent to read |
+
+The live loop needs two things only a session on your own computer has today: the plugin's hooks, and a page that can ring the session. Where they are missing, the skill tells the agent how to do each step by hand.
 
 ## What it touches
 
@@ -209,7 +231,7 @@ flowchart TB
 
 | Want to | Command |
 |---|---|
-| Get the newest version | `claude plugin update browser-agent@browser-agent`, then restart Claude Code. You are told when one is ready: one line when a session starts, and an "Update ready" item in the board's Inbox |
+| Get the newest version | Press **Update now** on the board when "Update ready" appears in its Inbox, then restart Claude Code. Or run `claude plugin update browser-agent@browser-agent --scope project` yourself. You are told when one is ready: one line when a session starts, and the item in the Inbox |
 | Turn it off for a while | `claude plugin disable browser-agent@browser-agent` |
 | Remove it | `claude plugin uninstall browser-agent@browser-agent --scope project` |
 | Remove a project's board | Delete the project's `.cockpit/` folder, and the page from your claude.ai artifacts |
@@ -251,6 +273,8 @@ Nothing beyond your normal Claude Code use. Each message to the agent carries a 
 | The repository cannot be found or cloned | Git on this computer is not signed in to an account that can read it. Run `gh auth login`, then try again |
 | The page says no agent is running | Open `claude` in the project. Requests made on the page are applied then |
 | The page looks out of date | Say "publish my board" |
+| You pressed something on the board and nothing happened | Look under "Your requests" on the Live page: each request shows when it was saved, when the agent was told, and when it was applied. If the agent was not told, open `claude` in the project, or say "check the board" |
+| The first page still shows five steps after "Goal 1 is ready" | Reload the page in your browser: the full board replaced it at the same address |
 | You want to start over | Delete `.cockpit/` and say "set up my board" again |
 
 </details>
@@ -262,6 +286,9 @@ Nothing beyond your normal Claude Code use. Each message to the agent carries a 
 | [Installing](docs/12-install.md) | Every way to install, what each part of the plugin does, and what is tested |
 | [Private and paid plugins](docs/19-private-code.md) | What a plugin's user can see, and how closed plugins are built |
 | [A demo plan](examples/demo/) | The made-up project in the pictures |
+| [What changed](CHANGELOG.md) | Each version, in plain words |
+| [Questions and problems](https://github.com/syedabbasshaheer-art/browser-agent/issues) | Ask, or say what went wrong |
+| [The licence](LICENSE) | MIT: use it, change it, pass it on |
 
 <details>
 <summary><b>For developers</b></summary>

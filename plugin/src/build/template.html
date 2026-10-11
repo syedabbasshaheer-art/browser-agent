@@ -1480,7 +1480,17 @@ function reqFeed(){
   if(!CAP.db)return '<p class="lvro">Read-only here: this view cannot send requests.</p>';
   if(!acts.length)return '<p class="lnone">You have not sent a request from this board yet. A request is anything you ask for here: starting a card, an answer, an approval.</p>';
   return '<div class="reqbody" id="lvreq"><p class="iwhy">'+(np?np+" waiting for the agent. "+esc(sessionLine()):"Every request has an answer.")+'</p>'
-    +acts.slice(0,30).map(function(a){return '<div class="ritem2"><p><b>'+esc(actLabel(a))+'</b><time datetime="'+esc(a.askedAt)+'">'+hhmm(a.askedAt)+'</time></p>'+(a.text&&(a.verb==="message.send"||a.verb==="question.answer"||a.verb==="card.note"||a.verb==="notes.add")?'<p class="rq">“'+esc(a.verb==="message.send"?tidyMsg(a.text):a.text)+'”</p>':"")+(a.verb==="message.send"&&a.status==="done"?'<p class="rcpt st-done"><b class="rs">Answered</b> '+esc(a.result||"")+'</p>':'<p class="rcpt st-'+esc(String(a.status))+'">'+statusHTML(a)+'</p>')+'</div>'}).join("")+'</div>';
+    +acts.slice(0,30).map(function(a){return '<div class="ritem2"><p><b>'+esc(actLabel(a))+'</b><time datetime="'+esc(a.askedAt)+'">'+hhmm(a.askedAt)+'</time></p>'+(a.text&&(a.verb==="message.send"||a.verb==="question.answer"||a.verb==="card.note"||a.verb==="notes.add")?'<p class="rq">“'+esc(a.verb==="message.send"?tidyMsg(a.text):a.text)+'”</p>':"")+(a.verb==="message.send"&&a.status==="done"?'<p class="rcpt st-done"><b class="rs">Answered</b> '+esc(a.result||"")+'</p>':'<p class="rcpt st-'+esc(String(a.status))+'">'+statusHTML(a)+'</p>')+stopsHTML(a)+'</div>'}).join("")+'</div>';
+}
+/* where a request is: its three stops, each with its time (saved on the page, the agent told, applied) */
+function hms(at){var d=new Date(at);if(isNaN(d))return "";var p=function(n){return ("0"+n).slice(-2)};return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds())}
+function stopsHTML(a){
+  if(!a||!a.askedAt)return "";
+  var told=a.toldAt||(a.status&&a.status!=="pending"?a.decidedAt:""),end=a.status==="done"||a.status==="refused"?a.decidedAt:"";
+  var s=function(on,t){return '<span'+(on?' class="on"':"")+'>'+esc(t)+'</span>'};
+  return '<p class="rstops" aria-label="Where this request is">'+s(true,"Saved "+hms(a.askedAt))
+    +s(!!told,told?"The agent was told "+hms(told):"The agent is not told yet")
+    +s(!!end,end?(a.status==="refused"?"Refused ":"Applied ")+hms(end):a.status==="accepted"?"The agent is working on it":"Not applied yet")+'</p>';
 }
 /* cards in play: each card once, in the first group that fits */
 function sideBlock(){

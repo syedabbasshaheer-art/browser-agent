@@ -5,15 +5,16 @@
 // The after-tool hook uses this to remind the agent to post an update; the page uses the same idea to show
 // "No update for N min".
 export const QUIET_MIN = 6;    // minutes of silence before a reminder: the promise is a line about every eight minutes
-export const UNSENT_MIN = 1;   // a logged line older than this that is not on the board yet earns a reminder to send it
+export const UNSENT_MIN = 0.5; // minutes: a logged line older than this that is not on the board yet earns a reminder to send it
+export const SEND_GAP_SEC = 45; // at most one such reminder in this many seconds
 
 // Lines the agent logged that the board does not have. Pure: the lines waiting, and the clock, in.
 export function unsentDue(waiting, now = Date.now(), minAge = UNSENT_MIN) {
   const list = (waiting || []).filter((e) => e && e.at);
   if (!list.length) return null;
   const oldest = Math.min(...list.map((e) => Date.parse(e.at)).filter((t) => !isNaN(t)));
-  const minutes = Math.floor((now - oldest) / 60000);
-  return minutes >= minAge ? { count: list.length, minutes } : null;
+  const age = (now - oldest) / 60000, minutes = Math.floor(age);
+  return age >= minAge ? { count: list.length, minutes } : null;
 }
 export const NUDGE_GAP_MIN = 5; // at most one reminder in this many minutes
 

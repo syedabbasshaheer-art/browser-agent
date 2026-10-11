@@ -240,7 +240,7 @@ test("hook: lines logged and not sent for a minute earn one reminder with the ba
   const bash = { hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "npm test" }, session_id: S };
   let r = hook(dir, "after-tool", bash);
   const said = context(r);
-  assert.match(said, /^\[board\] 2 lines are logged but not on the board, the oldest for 9 min\. .*one ArtifactData batch call with the writes in (.+push-batch-1\.json), then run: node ".+cockpit\.mjs" push --sent 2$/);
+  assert.match(said, /^\[board\] 2 lines are logged but not on the board, the oldest for 9 min\. .*one ArtifactData batch call with the writes in (.+push-batch-1\.json), then run: node ".+cockpit\.mjs" push --sent 2 The writes: \[\{"op":"set","collection":"live","doc_id":"u1",.*\]$/);
   assert.equal(context(hook(dir, "after-tool", bash)), "", "not twice in three minutes");
   rm(dir);
   dir = project(BOARD, STARTED);

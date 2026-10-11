@@ -322,7 +322,8 @@ test("push: a batch holds 50 writes, a backlog is sent in turns, and lines older
     assert.deepEqual(ids(batch, "delete"), [], "nothing to delete yet");
     sent.push(...ids(batch, "set"));
     high = Number(out[1].match(/^Highest offset: (\d+)/)[1]);
-    assert.equal(out.length, turn < 3 ? 3 : 2, "it says when more lines wait");
+    assert.equal(out.length, turn < 3 ? 4 : 3, "it says when more lines wait, and ends with the writes on one line");
+    assert.deepEqual(JSON.parse(out[out.length - 1].replace(/^Its writes: /, "")), batch);
     if (turn < 3) assert.match(out[2], new RegExp("^" + (150 - 50 * turn) + " more lines wait"));
     assert.equal(cli(dir, "push", "--sent", String(high)).status, 0);
   }
@@ -355,10 +356,11 @@ test("say, ask and turn-end end with the batch and the exact follow-up command, 
     const r = cli(dir, ...args);
     assert.equal(r.status, 0, r.stderr);
     const out = r.stdout.trim().split("\n");
-    assert.equal(out.length, 3, args[0]);
+    assert.equal(out.length, 4, args[0]);
+    assert.deepEqual(JSON.parse(out[3].replace(/^Its writes: /, "")), readJSON(pushFile(dir)), "the writes ride on one line");
     assert.equal(out[1], "Send with one ArtifactData batch call: " + pushFile(dir).replaceAll("\\", "/"), args[0]);
     assert.equal(out[2], "Then run: cockpit push --sent " + (i + 1), args[0]);
-    assert.ok(!/ArtifactData set|doc_id/.test(r.stdout), "the single-document hint is gone");
+    assert.ok(!/ArtifactData set/.test(r.stdout), "the single-document hint is gone");
     assert.deepEqual(ids(readJSON(pushFile(dir)), "set"), Array.from({ length: i + 1 }, (_, n) => "u" + (n + 1)), "unsent lines ride along");
   });
   assert.equal(cli(dir, "push", "--sent", "3").status, 0);

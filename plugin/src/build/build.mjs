@@ -39,6 +39,7 @@ export const ROOT = CFG.ROOT;                               // the project: reco
 const P = (rel) => path.join(ROOT, rel);
 export const FILES = {
   record: P(CFG.RECORD), out: P(CFG.OUT), template: path.join(HERE, "template.html"),
+  first: path.join(HERE, "first.html"), opening: P(CFG.LOCAL + "/opening.html"),   // the small page a first run publishes first
   local: P(CFG.LOCAL), activity: P(CFG.LOCAL + "/activity.jsonl"),
   snapshot: P(CFG.LOCAL + "/snapshot.json"), receipt: P(CFG.LOCAL + "/published.json"),
 };
@@ -239,6 +240,8 @@ export function build({ write = true } = {}) {
   result.rawHtml = html;                 // unthemed, for the prototype builder
   html = applyTheme(html, CFG.THEME);
   fs.writeFileSync(FILES.out, html);
+  // A first run publishes a small page first: the full one takes minutes to read in some sessions, this one seconds.
+  if (CFG.PLANNING) { fs.mkdirSync(path.dirname(FILES.opening), { recursive: true }); fs.writeFileSync(FILES.opening, fs.readFileSync(FILES.first, "utf8").split("__TITLE__").join(esc(CFG.TITLE))); }
   result.hash = sha(html);
   // The SUBSTANCE of the board: everything except the activity feed. Every message
   // you send is logged to the feed, so the full hash changed on every turn and the

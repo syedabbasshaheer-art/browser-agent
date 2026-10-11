@@ -15,7 +15,7 @@ import { ARTIFACT_URL, AUTO, SKIP } from "../build/config.mjs";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import * as events from "../events/events.mjs";
-import { quietCards, nudgeText, NUDGE_GAP_MIN, unsentDue } from "./quiet.mjs";
+import { quietCards, nudgeText, NUDGE_GAP_MIN, unsentDue, SEND_GAP_SEC } from "./quiet.mjs";
 import { cardsInProgress, pulseDecision, pulseEvent } from "../core/pulse.mjs";
 import { pushBatch, hasBoard, unsentLines } from "../events/push.mjs";
 
@@ -44,6 +44,8 @@ function pulse(session) {
   finally { if (mine) { try { fs.rmSync(PULSE_LOCK, { force: true }); } catch { /* it goes stale by itself */ } } }
 }
 
+// The batch's writes on one line, so sending needs no step to read the file first.
+function writesLine(file) { try { return JSON.stringify(JSON.parse(fs.readFileSync(file, "utf8"))); } catch { return "(read them from " + file + ")"; } }
 // Lines were logged and never sent: the owner sees nothing until they are. One reminder, with the batch ready.
 const SEND_STAMP = FILES.local + "/send-nudge.json";
 function sendNudge(tool) {
@@ -52,12 +54,12 @@ function sendNudge(tool) {
     const due = unsentDue(unsentLines());
     if (!due) return "";
     let last = 0; try { last = JSON.parse(fs.readFileSync(SEND_STAMP, "utf8")).at || 0; } catch {}
-    if (Date.now() - last < 3 * 60000) return "";
+    if (Date.now() - last < SEND_GAP_SEC * 1000) return "";
     const b = pushBatch();
     if (!b.file) return "";
     writeJSON(SEND_STAMP, { at: Date.now() });
     const cli = fileURLToPath(new URL("../cli/cockpit.mjs", import.meta.url));
-    return `[board] ${due.count} line${due.count === 1 ? " is" : "s are"} logged but not on the board, the oldest for ${due.minutes} min. The user is watching the board and sees nothing until you send: one ArtifactData batch call with the writes in ${b.file}, then run: node "${cli}" push --sent ${b.high}`;
+    return `[board] ${due.count} line${due.count === 1 ? " is" : "s are"} logged but not on the board, the oldest for ${due.minutes ? due.minutes + " min" : "under a minute"}. The user is watching the board and sees nothing until you send: one ArtifactData batch call with the writes in ${b.file}, then run: node "${cli}" push --sent ${b.high} The writes: ${writesLine(b.file)}`;
   } catch { return ""; }
 }
 

@@ -41,24 +41,30 @@ accept the plan. Do these in order, without asking them to type anything else:
 
    **The board comes before everything.** Until the board's link is in front of the person, do nothing that is
    not on this list: do not run this plugin's tests, do not read or review its source, do not explore its folder,
-   do not study the project yet. The page is the plugin's own build; if your publishing tool requires you to read
-   a file before publishing it, read it once now and do not read it again on later publishes (a rebuild changes
-   only the data inside it). A person watching a terminal for five minutes with nothing to look at leaves.
+   do not study the project yet. A person watching a terminal for five minutes with nothing to look at leaves.
 
-2. **Open the board at once.** `init --planning` (it writes a placeholder plan), then `publish`, then
-   `link <the address the Artifact tool returned> --open`. The page is this plugin's own build of the project's
-   record, so publish it straight away. Then one line in the terminal: "Step 1 is done: your board is open in
+2. **Open the board at once, with the small opening page.** `init --planning --title "<the project's name as
+   the person would say it>"` writes a placeholder plan and two pages: the full board (`.claude/board.html`,
+   several hundred kilobytes) and a small opening page (`.claude/local/opening.html`, a few kilobytes) that
+   shows the five steps and your lines as they arrive. Publish **the opening page** as the first publish (no
+   `url`, the icon and the capabilities of `publish` below), then `link <the address the Artifact tool
+   returned> --open`. It is small on purpose: whatever your publishing tool must do with a file before it
+   publishes, it does in seconds. Do not publish the full board in this step. Then one line in the terminal: "Step 1 is done: your board is open in
    your browser. Watch the Live page there." and the same on the board: `say "The board is open. Next: reading
    the project." --step 1/5`, and send its batch.
 3. **Goal 1 first.** Read `PLAN.md` beside this file and follow its "order of work". Read the folder, post one
    `say` line with what you found, in counts (`--step 2/5`). Then write goal 1 only: the next step that starts
-   from what the person already has. `lint`, `build`, publish to the same address, and
+   from what the person already has. `lint`, `build`, then publish the full board, `.claude/board.html`, to the
+   same address (pass it as `url`): this is where the full board replaces the opening page. If your publishing
+   tool must read a file before publishing it, read the full board once here and not again on later publishes (a
+   rebuild changes only the data inside it); the person is already watching the opening page while you do. Then
    `say "Goal 1 is ready: <its name>. Reload this page to read it; the other goals follow." --step 3/5`. In the
    terminal, one line: "Goal 1 is on your board: <its name>." This is the first real thing the person sees, so
    it comes before any study of the field and before any web search.
 4. **Then the rest, and hand over.** Study the field (a web search tool, if you have one: three searches at
    most), write the goals that follow, and run the guide's checks. Post `say` with the field and where the
-   person stands in it (`--step 4/5`). Then `planned`, publish again to the same address, and
+   person stands in it (`--step 4/5`). Then `planned` (add `--title "<name>"` if the plan gave the project a
+   better name than its folder's), publish again to the same address, and
    `say "Your plan is ready: N cards in G goals. Reload this page to see it, then decide." --kind result` (the
    open page reacts to a line that begins "Your plan is ready"), then the questions from `PLAN.md` step 7. Do not
    ask anything in the terminal: what you had to assume becomes a question on the board.
