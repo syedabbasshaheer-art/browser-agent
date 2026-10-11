@@ -180,7 +180,14 @@ test("first run: planned ends the being-written state and keeps the plan a draft
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-first-"));
   assert.equal(cli(dir, "init", "--planning").status, 0);
   fs.copyFileSync(fileURLToPath(new URL("../plugin/templates/BOARD.md", import.meta.url)), path.join(dir, ".cockpit/BOARD.md"));
+  // work the agent found already finished is written as DONE with its evidence, on an id the placeholder used
+  const rec = path.join(dir, ".cockpit/BOARD.md");
+  fs.writeFileSync(rec, fs.readFileSync(rec, "utf8").replace("| 1.1 | BACKLOG | agent | code | S | - | - | **The build passes.** One command builds the project from a clean checkout.", "| 1.1 | DONE | agent | code | S | - | - | **The build passes.** One command builds the project from a clean checkout. • Verified: the build ran clean in the folder."));
+  const b0 = cli(dir, "build"); assert.equal(b0.status, 0, "a card found finished may be DONE while the plan is being written: " + b0.stderr);
   const p = cli(dir, "planned"); assert.equal(p.status, 0, p.stderr + p.stdout);
+  fs.writeFileSync(rec, fs.readFileSync(rec, "utf8").replace("| 1.2 | BACKLOG | agent | code | L | - | 1.1 | **Write the core feature.** The one thing a user comes for.", "| 1.2 | DONE | agent | code | L | - | 1.1 | **Write the core feature.** The one thing a user comes for. • Verified: used once."));
+  const b1 = cli(dir, "build"); assert.equal(b1.status, 1); assert.match(b1.stderr, /card 1.2 moved to DONE but the plan is a draft/, "once the plan is written, a draft closes nothing");
+  fs.writeFileSync(rec, fs.readFileSync(rec, "utf8").replace("| 1.2 | DONE |", "| 1.2 | BACKLOG |").replace(" • Verified: used once.", ""));
   const cfg = JSON.parse(fs.readFileSync(path.join(dir, ".cockpit/config.json"), "utf8"));
   assert.deepEqual([cfg.plan, "planning" in cfg], ["draft", false]);
   assert.match(fs.readFileSync(path.join(dir, ".claude/board.html"), "utf8"), /"planning":false/);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.9
+
+- Work the agent finds already finished in your folder is shown as done in the first plan, instead of waiting for you to accept the plan.
+
 ## 0.0.8
 
 - One pasted line installs the plugin, starts Claude Code and asks for the board.

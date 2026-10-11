@@ -169,7 +169,9 @@ export function build({ write = true } = {}) {
   // the same rule for a record edited by hand or by the agent in the terminal.
   if (CFG.PLAN === "draft" && !CFG.CONFIG_ERROR) rec.cards.forEach((c) => {
     if (c.st === "START") rec.errors.push(`card ${c.id} is in START but the plan is a draft: nothing starts until the owner accepts the plan on the board; put it back to BACKLOG`);
-    else if (c.st === "DONE" && was && was[c.id] && was[c.id] !== "DONE") rec.errors.push(`card ${c.id} moved to DONE but the plan is a draft: nothing closes until the owner accepts the plan on the board; leave it in ${was[c.id]}`);
+    // While the first plan is being written, the ids of the placeholder are reused by the real plan: a card the
+    // agent found already finished in the folder is written as DONE with its evidence, and that is not a close.
+    else if (c.st === "DONE" && !CFG.PLANNING && was && was[c.id] && was[c.id] !== "DONE") rec.errors.push(`card ${c.id} moved to DONE but the plan is a draft: nothing closes until the owner accepts the plan on the board; leave it in ${was[c.id]}`);
   });
   if (CFG.PATH_ERROR) rec.errors.push(`.cockpit/config.json: ${CFG.PATH_ERROR}`);
   if (CFG.CONFIG_ERROR) rec.errors.push(`.cockpit/config.json is not valid JSON (${CFG.CONFIG_ERROR}): fix it; until then the plan is treated as a draft`);

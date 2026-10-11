@@ -72,7 +72,7 @@ The columns, exactly:
 | Column | Allowed | Meaning |
 |---|---|---|
 | ID | `<goal>.<n>` | Never reused, never renumbered |
-| ST | `BACKLOG`, `DOING`, `DONE`, `BLOCKED` | New work is `BACKLOG`. Use `DONE` only for work you saw finished in the folder, and add `• Verified: <what you saw>`. Never write `START`: that is the user's hand-over |
+| ST | `BACKLOG`, `DOING`, `DONE`, `BLOCKED` | New work is `BACKLOG`. Use `DONE` only for work you saw finished in the folder, and add `• Verified: <what you saw>`. This is allowed while the first plan is being written (before `planned`); after that a draft closes nothing until the owner accepts it. Never write `START`: that is the user's hand-over |
 | OWN | `agent`, `human` | `human` = only the user can do it: a decision, a payment, an account, a sign-off |
 | TYPE | `code`, `content`, `config`, `verify`, `account`, `decision` | The kind of work |
 | EFF | `Q`, `S`, `L` | About 15 minutes, about an hour, more than an hour |
