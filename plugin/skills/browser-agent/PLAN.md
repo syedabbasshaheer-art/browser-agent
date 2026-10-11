@@ -32,9 +32,13 @@ Ask three to six questions, all at once, with the AskUserQuestion tool. Offer ch
 - What is out of scope?
 - Anything the folder contradicts itself about.
 
-Never ask what the folder already answers. If you cannot ask (a run with nobody there), do not stop: take the most
-reasonable answer and record it in the Decisions table starting with "Assumed:", so the user can correct it on the
-board.
+Never ask what the folder already answers. When a person is there, asking is not optional: anything you would
+otherwise assume (where data lives, what finished means, prices, limits, a date) is a question, with your best guess
+as the recommended choice. A plan built on silent assumptions sends the user to the board to find and undo them.
+
+Only if you truly cannot ask (a run with nobody there, or the question tool is not available), do not stop: take the
+most reasonable answer and record it in the Decisions table starting with "Assumed:", so the user can correct it on
+the board.
 
 ## 3. Write the plan into `.cockpit/BOARD.md`
 

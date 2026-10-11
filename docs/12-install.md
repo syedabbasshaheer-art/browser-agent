@@ -87,6 +87,7 @@ speak when a session starts. So:
 | Moment | What the user sees | What makes it happen |
 |---|---|---|
 | First new session in a project with no board | "Agent on Browser is installed. To see this project as a board in your browser, type /browser-agent or just say "set up my board". This line is shown once." | The session-start hook. The "shown" mark is kept in the plugin's own data folder (`~/.claude/plugins/data/`), never in the project |
+| The plugin was installed inside a running session (so no session start is seen) | The same welcome, on the first message typed after the install. A first message that is already `/browser-agent` gets no welcome | The prompt hook, with the same once-per-project mark |
 | The user types `/browser-agent`, or says "set up my board" | The agent creates `.cockpit/`, reads the project, asks what it could not find, writes the plan, publishes, and gives the link | The skill's `start` step. Plain words work because the skill's description lists them |
 | Every later new session in that project | "Agent on Browser: the <project> board is at <link>. Type /browser-agent for its commands." | The same hook |
 | Every message | Nothing visible. The agent is handed the board's summary and the owner's notes | The prompt hook |
@@ -132,7 +133,7 @@ version they installed until they update.
 | Control | How it holds |
 |---|---|
 | Nothing installs by itself | You run the install. `/plugin` disables or removes it at any time |
-| Silent where it is not wanted | In a project with no `.cockpit/config.json` the prompt, after-tool and stop hooks do nothing at all, and the session-start hook shows its welcome once and writes nothing in the project (`test/silent.test.mjs`) |
+| Silent where it is not wanted | In a project with no `.cockpit/config.json` the after-tool and stop hooks do nothing at all, and the session-start hook (or, after an install inside a running session, the prompt hook on the first message) shows the welcome once and writes nothing in the project (`test/silent.test.mjs`) |
 | No network, no servers, no install scripts | Plain Node files. No MCP server, no dependencies, nothing runs at install time |
 | Stays inside the project | Hooks read and write only the record, `.claude/board.html` and `.claude/local/` in the project Claude Code is working in. A settings path that points outside the project is refused |
 | Hooks notice, they never act | A hook cannot publish a page, write the page's database or call a model. It can only add context, show a line, or hold the end of a turn at most once |

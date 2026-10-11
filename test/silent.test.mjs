@@ -96,3 +96,30 @@ test("welcome: the plugin registers the hook for new sessions only, through its 
   assert.equal(hk.length, 1); assert.equal(hk[0].matcher, "startup");
   assert.equal(hk[0].hooks[0].command, 'node "${CLAUDE_PLUGIN_ROOT}/src/hooks/session-start.mjs"');
 });
+
+// ── an install made inside a running session sees no session start: the first message gives the welcome ──
+const firstMessage = (dir, data, prompt) => {
+  const env = { ...process.env, CLAUDE_PROJECT_DIR: dir, ...(data ? { CLAUDE_PLUGIN_DATA: data } : {}) }; delete env.COCKPIT_ROOT; delete env.COCKPIT_CONFIG; delete env.COCKPIT_RECORD;
+  if (!data) delete env.CLAUDE_PLUGIN_DATA;
+  return spawnSync(process.execPath, [HOOK("prompt")], { cwd: dir, env, input: JSON.stringify({ hook_event_name: "UserPromptSubmit", prompt, session_id: "s" }), encoding: "utf8" });
+};
+test("welcome: with no session start seen, the first message gets the welcome once, and nothing is written in the project", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-new-")), data = fs.mkdtempSync(path.join(os.tmpdir(), "lob-data-"));
+  const a = firstMessage(dir, data, "what does this project do?"); assert.equal(a.status, 0, a.stderr);
+  const j = JSON.parse(a.stdout);
+  assert.match(j.systemMessage, /^Agent on Browser is installed\./);
+  assert.equal(j.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  assert.match(j.hookSpecificOutput.additionalContext, /Do nothing about the board unless they ask\.$/);
+  assert.deepEqual(filesIn(dir), [], "nothing written in the project");
+  assert.equal(firstMessage(dir, data, "and now?").stdout, "", "the second message is silent");
+  assert.equal(start(dir, data).stdout, "", "and so is the next new session");
+  for (const d of [dir, data]) fs.rmSync(d, { recursive: true, force: true });
+});
+test("welcome: a first message that is already the command gets no welcome, now or later", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lob-new-")), data = fs.mkdtempSync(path.join(os.tmpdir(), "lob-data-"));
+  assert.equal(firstMessage(dir, data, "/browser-agent").stdout, "");
+  assert.equal(firstMessage(dir, data, "hello").stdout, "", "the mark was written, so it does not come later");
+  assert.equal(firstMessage(dir, null, "hello").stdout, "", "with no data folder the hook stays silent");
+  assert.deepEqual(filesIn(dir), []);
+  for (const d of [dir, data]) fs.rmSync(d, { recursive: true, force: true });
+});

@@ -9,7 +9,20 @@ import * as CFG from "../build/config.mjs";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
+import { COMMAND, WELCOME, WELCOME_CONTEXT, claimWelcome } from "./welcome.mjs";
 import { notesBlock, CAPS, FILES as MEMORY_FILES } from "../core/memory.mjs";
+
+// A project with no board: every hook is silent, with one exception. A plugin installed inside a running session
+// never sees a session start, so the welcome is given on the first message instead, once per project. A message
+// that is already the command needs no welcome; the mark is still written so it does not come later.
+if (!CFG.HAS_CONFIG) {
+  try {
+    const raw = await readStdin();
+    if (claimWelcome() && !String(raw.prompt || "").trim().toLowerCase().startsWith(COMMAND))
+      process.stdout.write(JSON.stringify({ systemMessage: WELCOME, hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: WELCOME_CONTEXT } }));
+  } catch { /* a message goes through regardless */ }
+  process.exit(0);
+}
 
 guard(async () => {
   const e = A.triggers.read(await readStdin());

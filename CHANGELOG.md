@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.7
+
+- A plugin installed inside a running session now gives its welcome on the first message, once.
+- The planner asks its questions when a person is there, and no longer plans on silent assumptions.
+- On a draft plan the Live headline says to accept the plan.
+- The open card's header takes two lines, so the reading area starts higher.
+- A card that is your own to do has no approval button. "Confirm and close" is now "I have finished this".
+- The starter settings point at the schema's real address.
+
 ## 0.0.6
 
 - A result may carry up to two suggested next replies. The page shows them as buttons on that line; one press sends the reply as your message about the card.

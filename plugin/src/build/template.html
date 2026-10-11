@@ -1202,6 +1202,7 @@ function askStatus(){
 /* the Now sentence, without "Last word …": what the block shows and what is announced when it changes */
 function nowSay(st){
   var k=st.k,sp;
+  if(isDraft()&&k!=="working"&&k!=="quiet")return "The plan is a draft. Nothing starts until you accept it.";   /* a draft has one next step, and it is not a card */
   if(k==="working"){sp=stepOf(st.prog);return "The agent is on "+cidBtn(st.card)+(sp?", step "+sp.step+" of "+sp.of:"")+"."}
   if(k==="quiet")return "No word from the agent on "+cidBtn(st.card)+" for "+span(st.mins)+". It may have stopped.";
   if(k==="no-session")return "No agent is running."+(st.turn?" The last turn ended "+whenAt(st.turn.at)+".":" None has written a line on this board yet.")+(st.np?" "+st.np+" request"+(st.np===1?" is":"s are")+" waiting.":"");
@@ -1711,13 +1712,14 @@ function filesDialog(){
 }
 /* What this viewer can do to the card. A gate is the owner's yes before a card starts, so for the owner an
    agent card with an open gate has ONE button, "Approve and start": the start request is the approval.
-   "Approve" alone exists only where starting is not possible: a card that is yours, or one in progress. */
+   "Give your approval" alone exists only on a card already in progress. A card that is the owner's own to do has
+   no approval at all: doing it is the yes (owner, 2026-10-11). */
 function actionBar(c,p){
   if(!CAP.db)return '<p class="sro">Read-only here: this view cannot send actions.</p>';
   var pend=pendingMoveOf(c.id);
   if(pend.length)return '<p class="spend"><b>Sent, waiting for the agent.</b> '+esc(pendLabel(c.id))+'.</p><button class="btn btn-tonal btn-sm" data-act="seeinbox">See your requests</button>';
   var gated=c.gate!=="-"&&!DIFF[c.id],out="",hint="";   /* a differing card offers no approval */
-  var approve='<button class="btn btn-tonal" data-act="approve" data-id="'+esc(c.id)+'">'+ic(I.check,18)+'Approve</button>';
+  var approve='<button class="btn btn-tonal" data-act="approve" data-id="'+esc(c.id)+'">'+ic(I.check,18)+'Give your approval</button>';
   if(p==="DONE")return '<span class="chip c-DONE">'+ic(I.check,12)+'Done'+(verified(c)?" and confirmed":"")+'</span>';
   if(c.st==="START"&&cardNeed(c.id))return '<span class="chip c-q"><i></i>Needs you: '+esc(cardNeed(c.id).charAt(0).toLowerCase()+cardNeed(c.id).slice(1))+'</span>'+(qsOf(c.id).length?qsOf(c.id).map(function(q){return '<p class="qtext">'+esc(q.text)+'</p>'+qAnswerHTML(q,"sheet")}).join(""):'<p class="hint">Open Needs you to act on it.</p>');
   if(c.st==="START")return '<span class="chip c-START"><i></i>Agent is on it</span>'+(gated&&CAP.owner?approve:"")+'<p class="hint">It moves to Done once its done-when is confirmed.</p>';
@@ -1726,8 +1728,7 @@ function actionBar(c,p){
     out+='<button class="btn btn-filled" data-act="start" data-id="'+esc(c.id)+'"'+(sb?' aria-disabled="true" data-tip="'+esc(sb)+'" data-tip-pos="up right wrap"':"")+'>'+ic(I.play,18)+(gated&&CAP.owner?"Approve and start":"Start with the agent")+'</button>';
     if(sb)hint=sb;
   }
-  if(c.own==="human"&&gated&&CAP.owner)out+=approve;
-  if(CAP.owner&&!isDraft())out+='<button class="btn btn-outlined" data-act="moveto" data-id="'+esc(c.id)+'" data-c="DONE">'+(verified(c)?"Mark done":"Confirm and close")+'</button>';
+  if(CAP.owner&&!isDraft())out+='<button class="btn btn-outlined" data-act="moveto" data-id="'+esc(c.id)+'" data-c="DONE">'+(verified(c)?"Mark done":"I have finished this")+'</button>';
   if(!CAP.owner)hint+=(hint?" ":"")+"Only the owner can mark a card done or approve a gate.";
   else if(isDraft()&&!hint)hint=DRAFT_WHY;
   return out+(hint?'<p class="hint">'+esc(hint)+'</p>':"");
@@ -1744,10 +1745,10 @@ function sheetHTML(){
   var thread=feedEntries().filter(function(e){return e.card===c.id});
   var dp=E.dependents[c.id]||[],pl=pendLabel(c.id),notes=pendingOf(c.id).filter(function(a){return a.verb==="card.note"}).length;
   return '<div class="scrim" data-act="closesheet"></div><aside class="sheet" role="dialog" aria-modal="true" aria-label="Card '+esc(c.id)+'"><span class="grab"></span>'
-   +'<div class="shh"><div class="row"><span class="cid s-'+p+'">'+esc(c.id)+'</span>'+chipState(p)+chipOwn(c.own)+'<span class="spacer"></span>'
+   +'<div class="shh"><div class="row"><div class="tags"><span class="cid s-'+p+'">'+esc(c.id)+'</span>'+chipState(p)+chipOwn(c.own)+(c.gate!=="-"?'<span class="chip c-gate">Needs '+esc(c.gate)+'</span>':"")+(E.critical[c.id]?'<span class="chip c-pri">'+ic(I.flag,12)+'On the finish path</span>':"")+'<button class="chip c-plain" data-act="goal" data-g="'+c.g+'" title="Show Goal '+c.g+": "+esc(gTitle(c.g))+'">Goal '+c.g+'</button></div>'
    +(CAP.db&&CAP.owner?'<button class="ibtn" data-act="editcard" aria-label="Edit this card" data-tip="Edit" data-tip-pos="left">'+ic(I.edit)+'</button>':"")
    +'<button class="ibtn" data-act="closesheet" aria-label="Close" id="sheetclose" data-tip="Close  Esc" data-tip-pos="left">'+ic(I.x)+'</button></div>'
-   +'<h2>'+esc(c.title)+'</h2><div class="row">'+(c.gate!=="-"?'<span class="chip c-gate">Needs '+esc(c.gate)+'</span>':"")+(E.critical[c.id]?'<span class="chip c-pri">'+ic(I.flag,12)+'On the finish path</span>':"")+'<button class="chip c-plain" data-act="goal" data-g="'+c.g+'" title="Show Goal '+c.g+": "+esc(gTitle(c.g))+'">Goal '+c.g+'</button></div></div>'
+   +'<h2>'+esc(c.title)+'</h2></div>'
    +sheetTabsHTML(c)+(S.stab==="chat"?chatPaneHTML(c):'<div class="shb">'+(pl?'<div class="pend">'+esc(pl)+'</div>':"")+(function(){var r=allActs().filter(function(a){return a.card===c.id&&sentHere(a)&&a.status!=="pending"})[0];return r?'<p class="rcpt st-'+esc(String(r.status))+'"><span class="rl">'+esc(actLabel(r))+':</span> '+statusHTML(r)+'</p>':""})()
    +(BUILT[c.id]!==c.st?'<section class="fld" aria-label="Changed"><p class="sub">'+(BUILT[c.id]?"This card moved to "+esc(COLNAME[p])+" after this page was built.":"This card was added after this page was built.")+'</p></section>':"")
    +(DIFF[c.id]?'<section class="fld" aria-label="Differs"><p class="sub">'+DIFF_TXT+'</p></section>':"")

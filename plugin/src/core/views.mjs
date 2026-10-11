@@ -40,7 +40,7 @@ export function boardViews(cards, opts) {
     state[c.id] = c.st === "DONE" ? "done" : c.st === "BLOCKED" ? "blocked" : c.st === "START" ? "doing"
       : depsOf(c).every(isDone) ? "ready" : "backlog";
     var why = state[c.id] === "done" ? null : asked[c.id] ? "question"
-      : state[c.id] !== "ready" ? null : (c.gate && c.gate !== "-") ? "approval" : c.own === "human" ? "yours" : null;
+      : state[c.id] !== "ready" ? null : c.own === "human" ? "yours" : (c.gate && c.gate !== "-") ? "approval" : null;
     if (why) needsYou[c.id] = why;
   });
 

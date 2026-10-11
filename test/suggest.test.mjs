@@ -31,10 +31,10 @@ test("the order is question, approval, your card, then start; at most three", ()
 
 test("only the owner is offered an approval, and an approval of an agent card is one start request", () => {
   const cards = [card("1.1", "BACKLOG", "agent", "-", "approval"), card("1.2", "BACKLOG", "human", "-", "money")];
-  assert.deepEqual(kinds(run(cards, { owner: false })), []);
+  assert.deepEqual(kinds(run(cards, { owner: false })), ["yours:1.2"], "no approval is offered to someone who is not the owner");
   const [a, b] = run(cards);
   assert.deepEqual([a.kind, a.verb, a.button], ["approve", "task.start", "Approve and start"]);
-  assert.equal(b.verb, undefined, "an owner's own gated card is opened, not started");
+  assert.deepEqual([b.kind, b.verb], ["yours", undefined], "the owner's own gated card is theirs to do: opened, with no approval");
 });
 
 test("a card with a request already sent is not proposed again", () => {

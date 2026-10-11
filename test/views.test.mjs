@@ -42,18 +42,18 @@ test("goals are listed most active first, and keep record order inside a group",
   assert.deepEqual(v.views.all, ["4", "7", "3", "6", "2", "8", "1", "5"]);
 });
 
-test("needs-you gives one reason: question, then approval, then yours", () => {
+test("needs-you gives one reason: question, then yours for the owner's own card, then approval", () => {
   const g = (id, st, own, gate, deps = "-") => ({ ...card(id, st, own, deps), gate });
   const v = boardViews([
     g("1.1", "BACKLOG", "agent", "approval"),          // ready and gated: your approval
     g("1.2", "BACKLOG", "human", "-"),                 // ready and yours
-    g("1.3", "BACKLOG", "human", "money"),             // gated wins over yours
+    g("1.3", "BACKLOG", "human", "money"),             // the owner's own card: doing it is the yes, so no approval
     g("1.4", "BACKLOG", "agent", "approval", "1.1"),   // gated but not ready yet: nothing needed now
     g("1.5", "START", "agent", "approval"),            // already in progress: nothing needed
     g("1.6", "BACKLOG", "agent", "-"),                 // an ordinary ready agent card
     g("1.7", "START", "agent", "-"),                   // has a question
   ], { openQuestions: ["1.7"] });
-  assert.deepEqual({ ...v.needsYou }, { "1.1": "approval", "1.2": "yours", "1.3": "approval", "1.7": "question" });
+  assert.deepEqual({ ...v.needsYou }, { "1.1": "approval", "1.2": "yours", "1.3": "yours", "1.7": "question" });
 });
 
 test("a card needs you when it is yours and ready, or has an unanswered question", () => {

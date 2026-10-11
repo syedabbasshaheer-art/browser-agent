@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/syedabbasshaheer-art/browser-agent/main/templates/config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/syedabbasshaheer-art/browser-agent/main/plugin/templates/config.schema.json",
   "title": "",
   "record": ".cockpit/BOARD.md",
   "artifact": "",
