@@ -262,7 +262,7 @@ function planAccepted(){
    approve a gate, start a gated card, accept the plan, mark done, undo, pause, notes) counts only when it is in
    approvals/: a document in actions/ that claims one of these is not read at all. So nothing a contributor writes can
    hide, answer or fake one of the owner's prompts. */
-var OWNERV={"message.send":1,"question.answer":1,"gate.approve":1,"plan.accept":1,"auto.set":1,"notes.add":1,"notes.remove":1,"card.edit":1};
+var OWNERV={"message.send":1,"question.answer":1,"gate.approve":1,"plan.accept":1,"auto.set":1,"notes.add":1,"notes.remove":1,"card.edit":1,"plugin.update":1,"goal.set":1,"card.close":1};
 function ownerOnly(a){
   var b=a.card&&BASE[a.card];
   return !!OWNERV[a.verb]||(a.verb==="card.move"&&a.to!=="START")||((a.verb==="task.start"||a.verb==="card.move")&&!!b&&b.gate!=="-");
@@ -1490,7 +1490,7 @@ function stopsHTML(a){
   var s=function(on,t){return '<span'+(on?' class="on"':"")+'>'+esc(t)+'</span>'};
   return '<p class="rstops" aria-label="Where this request is">'+s(true,"Saved "+hms(a.askedAt))
     +s(!!told,told?"The agent was told "+hms(told):"The agent is not told yet")
-    +s(!!end,end?(a.status==="refused"?"Refused ":"Applied ")+hms(end):a.status==="accepted"?"The agent is working on it":"Not applied yet")+'</p>';
+    +s(!!end||a.status==="accepted",end?(a.status==="refused"?"Refused ":"Applied ")+hms(end):a.status==="accepted"?"Accepted "+hms(a.decidedAt||told):"Not applied yet")+'</p>';
 }
 /* cards in play: each card once, in the first group that fits */
 function sideBlock(){

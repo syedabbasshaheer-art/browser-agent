@@ -467,10 +467,8 @@ function push() {
   console.log(b.file);
   console.log(`Highest offset: ${b.high} (${b.sets} line${b.sets === 1 ? "" : "s"}${b.deletes ? ", " + b.deletes + " old to delete" : ""}). Send the file with one ArtifactData batch call, then run: cockpit push --sent ${b.high}`);
   if (b.waiting) console.log(`${b.waiting} more line${b.waiting === 1 ? "" : "s"} wait: a batch holds ${BATCH_MAX}. Run push again after --sent.`);
-  console.log("Its writes: " + writesLine(b.file));
+  if (b.line) console.log("Its writes: " + b.line);
 }
-// The batch's writes on one line: sending them needs no step to read the file first.
-const writesLine = (file) => { try { return JSON.stringify(JSON.parse(fs.readFileSync(file, "utf8"))); } catch { return "(in the file)"; } };
 // What say, ask and turn-end end with: the same batch, and the exact command that records it as sent.
 // Only when there is a real board to send it to.
 function pushHint(lead = "Send with one ArtifactData batch call:") {
@@ -480,7 +478,7 @@ function pushHint(lead = "Send with one ArtifactData batch call:") {
   if (!b.file) return;
   console.log(`${lead} ${b.file}`);
   console.log(`Then run: cockpit push --sent ${b.high}` + (b.waiting ? ` (and push again: ${b.waiting} more wait)` : ""));
-  console.log("Its writes: " + writesLine(b.file));
+  if (b.line) console.log("Its writes: " + b.line);
 }
 
 // A line is never cut without saying so: text longer than the limit is refused, with its length, and nothing is written.
@@ -514,10 +512,10 @@ function say(text) {
     if (long) throw new Error("a reply is " + NEXT_LEN + " characters at most; this one has " + long.length + ": " + safe(long, 80));
   }
   // The default kind is not stored: a line with no `say` reads as a milestone, as every older line does.
-  if (kind === "result" && card && !replies.length) console.log('This result offers the owner no next move. Next time add --next "<what they would most likely ask for> | <a second choice>", so the board leads to the next step.');
   const e = events.append("claude.said", { text: t, ...(kind !== "milestone" ? { say: kind } : {}), ...(card ? { card } : {}), ...(step || {}), ...(replies.length ? { replies } : {}) });
   console.log(`Said #${e.offset}${card ? " on " + card : ""}${step ? ` (step ${step.step} of ${step.of})` : ""}${kind !== "milestone" ? " [" + kind + "]" : ""}: ${t}`);
   pushHint();
+  if (kind === "result" && card && !replies.length) console.log('This result offers the owner no next move. When there is one, add --next "<what they would most likely ask for> | <a second choice>", so the board leads to the next step.');
 }
 // answer: the agent's answer to a message the owner typed on the board. It is written onto the request itself
 // (status done, result = the answer), so the page shows it wherever it shows the message: on the card it was
@@ -540,6 +538,7 @@ function answer(text) {
   fs.mkdirSync(path.join(OUT, "docs"), { recursive: true });
   const f = path.join(OUT, "docs", `${inboxName}__${to.action}.json`);
   const waiting = fs.existsSync(f);   // the inbox's own receipt for this request has not been sent yet: the answer takes its place
+  if (waiting) { try { const was = JSON.parse(fs.readFileSync(f, "utf8")); if (was && typeof was.toldAt === "string") doc.toldAt = was.toldAt; } catch { /* the receipt could not be read: the answer stands without it */ } }
   fs.writeFileSync(f, JSON.stringify(doc, null, 1));
   console.log(`Answered #${e.offset}${to.card ? " on card " + to.card : ""}: ${t}`);
   console.log(waiting ? "The answer replaced the waiting receipt of that request: send the inbox batch as it is."
@@ -627,7 +626,7 @@ function init() {
     fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, text); made.push(rel);
   };
   const cfg = JSON.parse(fs.readFileSync(path.join(TEMPLATES, "config.json"), "utf8"));
-  cfg.title = typeof opt("title") === "string" ? cleanText(opt("title"), 60) : niceTitle(path.basename(root));
+  cfg.title = (typeof opt("title") === "string" && givenTitle(opt("title"))) || niceTitle(path.basename(root));
   // --planning: the first run shows a placeholder at once and says the plan is being written (see `planned`).
   const planning = opt("planning", false) === true;
   if (planning) cfg.planning = true;
@@ -646,7 +645,7 @@ function init() {
   const r = spawnSync(process.execPath, [fileURLToPath(new URL("../build/build.mjs", import.meta.url)), "--digest"], { cwd: root, env: { ...process.env, COCKPIT_ROOT: root }, encoding: "utf8" });
   process.stdout.write(r.stdout); process.stderr.write(r.stderr);
   if (r.status !== 0) { process.exitCode = r.status || 1; return; }
-  console.log(planning ? "Next: publish " + CFG.LOCAL + "/opening.html with the Artifact tool (the small opening page: it publishes in seconds), then run link <its address> --open. The full board, " + CFG.OUT + ", goes to the same address when goal 1 is written."
+  console.log(fs.existsSync(path.join(root, CFG.LOCAL, "opening.html")) ? "Next: publish " + CFG.LOCAL + "/opening.html with the Artifact tool (the small opening page: it publishes in seconds), then run link <its address> --open. The full board, " + CFG.OUT + ", goes to the same address when goal 1 is written."
     : "Next: publish " + CFG.OUT + " with the Artifact tool, then put its link in .cockpit/config.json \"artifact\".");
 }
 
@@ -677,17 +676,23 @@ function openBoard() {
   if (!BOARD_URL.test(CFG.ARTIFACT_URL)) throw new Error("the board is not published yet, so there is nothing to open");
   openInBrowser(CFG.ARTIFACT_URL);
 }
+// A title typed by hand is kept as typed: only control characters go, and one over the limit is refused, never cut.
+function givenTitle(v) {
+  const t = String(v).replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+  if (t.length > 80) throw new Error("the title is " + t.length + " characters and the limit is 80. Nothing was written: shorten it and run the command again.");
+  return t;
+}
 // A folder's name read as a name: "my-video_project" is "My Video Project". A name that already has a capital or a space is kept.
 export function niceTitle(name) {
   const n = String(name || "").trim();
   if (!n) return "My project";
-  if (/[A-Z ]/.test(n) && !/[-_]/.test(n)) return n;
-  return n.split(/[-_.\s]+/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  if (!/[-_]/.test(n) && (/[A-Z ]/.test(n) || n.includes("."))) return n;
+  return n.split(/[-_\s]+/).filter(Boolean).map((w) => (/^[a-z][a-z0-9.]*$/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(" ");
 }
 // The plan has replaced the placeholder: stop saying it is being written, and check it.
 function planned() {
   if (fs.readFileSync(path.join(CFG.ROOT, CFG.RECORD), "utf8").includes("This is the placeholder shown while the agent writes the real plan")) throw new Error("the record still holds the placeholder: write the plan into " + CFG.RECORD + " first. Nothing was changed.");
-  const named = typeof opt("title") === "string" ? cleanText(opt("title"), 60) : "";
+  const named = typeof opt("title") === "string" ? givenTitle(opt("title")) : "";
   setConfig((cfg) => { delete cfg.planning; cfg.plan = "draft"; if (named) cfg.title = named; });
   const self = fileURLToPath(import.meta.url), env = { ...process.env, COCKPIT_ROOT: CFG.ROOT };
   for (const c of ["lint", "build"]) {

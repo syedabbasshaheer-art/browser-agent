@@ -30,7 +30,7 @@ function updateNotice() {
   try {
     if (!CFG.UPDATES) return null;
     const u = JSON.parse(fs.readFileSync(path.join(CFG.ROOT, CFG.LOCAL, "update.json"), "utf8"));
-    return newer(u.latest, VERSION) ? { have: VERSION, latest: String(u.latest), command: typeof u.command === "string" && u.command.startsWith(UPDATE_COMMAND) ? u.command : UPDATE_COMMAND } : null;
+    return newer(u.latest, VERSION) ? { have: VERSION, latest: String(u.latest), command: typeof u.command === "string" && /^claude plugin update browser-agent@browser-agent( --scope (project|local))?$/.test(u.command) ? u.command : UPDATE_COMMAND } : null;
   } catch { return null; }
 }
 
@@ -242,6 +242,7 @@ export function build({ write = true } = {}) {
   fs.writeFileSync(FILES.out, html);
   // A first run publishes a small page first: the full one takes minutes to read in some sessions, this one seconds.
   if (CFG.PLANNING) { fs.mkdirSync(path.dirname(FILES.opening), { recursive: true }); fs.writeFileSync(FILES.opening, fs.readFileSync(FILES.first, "utf8").split("__TITLE__").join(esc(CFG.TITLE))); }
+  else { try { fs.rmSync(FILES.opening, { force: true }); } catch { /* a stale opening page is only a file nobody is told to publish */ } }
   result.hash = sha(html);
   // The SUBSTANCE of the board: everything except the activity feed. Every message
   // you send is logged to the feed, so the full hash changed on every turn and the

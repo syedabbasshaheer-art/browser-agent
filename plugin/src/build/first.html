@@ -3,27 +3,27 @@
 <style>
 /* The opening page of a first run: small enough to publish in seconds. It shows the five steps and the
    agent's lines as they arrive. The full board replaces it at the same address when goal 1 is written. */
-:root{--bg:#f6f7fb;--surface:#ffffff;--ink:#141926;--ink2:#3c4457;--ink3:#596175;--line:#e3e6ee;--pri:#1d2b6b;--on-pri:#ffffff;--dn:#125632;--sh:0 1px 2px rgba(20,25,38,.06),0 4px 14px rgba(20,25,38,.06)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12151d;--surface:#1a1e29;--ink:#eef0f6;--ink2:#c7ccda;--ink3:#a3aabd;--line:#2c313f;--pri:#b9c5f5;--on-pri:#10152a;--dn:#9fdfb9;--sh:none}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#12151d;--surface:#1a1e29;--ink:#eef0f6;--ink2:#c7ccda;--ink3:#a3aabd;--line:#2c313f;--pri:#b9c5f5;--on-pri:#10152a;--dn:#9fdfb9;--sh:none}
+:root{--bg:#ffffff;--tone:#eef0f6;--surface:#ffffff;--ink:#141926;--ink2:#3c4457;--ink3:#596175;--line:#e3e6ee;--pri:#1d2b6b;--on-pri:#ffffff;--dn:#125632;--sh:0 1px 2px rgba(20,25,38,.06),0 4px 14px rgba(20,25,38,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12151d;--tone:#262b38;--surface:#1a1e29;--ink:#eef0f6;--ink2:#c7ccda;--ink3:#a3aabd;--line:#2c313f;--pri:#b9c5f5;--on-pri:#10152a;--dn:#9fdfb9;--sh:none}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12151d;--tone:#262b38;--surface:#1a1e29;--ink:#eef0f6;--ink2:#c7ccda;--ink3:#a3aabd;--line:#2c313f;--pri:#b9c5f5;--on-pri:#10152a;--dn:#9fdfb9;--sh:none}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/24px Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 .pg{max-width:720px;margin:0 auto;padding:32px 16px 48px;display:grid;gap:20px}
 h1{font-size:26px;line-height:32px;font-weight:700;margin:0;text-wrap:balance}
 .sub{margin:4px 0 0;color:var(--ink2)}
 .box{background:var(--surface);border-radius:16px;box-shadow:var(--sh);padding:20px}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .box{box-shadow:0 1px 3px rgba(20,25,38,.10),0 6px 20px rgba(20,25,38,.08)}}
 h2{font-size:16px;line-height:24px;font-weight:600;margin:0 0 10px}
 ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .st{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;color:var(--ink3)}
-.st i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:600;font-size:13px;background:var(--bg);color:var(--ink3)}
+.st i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:600;font-size:13px;background:var(--tone);color:var(--ink3)}
 .st.done{color:var(--ink2)}.st.done i{background:var(--dn);color:var(--surface)}
 .st.now{color:var(--ink);font-weight:600}.st.now i{background:var(--pri);color:var(--on-pri);animation:pu 1.6s ease-in-out infinite}
 @keyframes pu{50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){.st.now i{animation:none}}
 .ready{background:var(--pri);color:var(--on-pri);border-radius:16px;padding:16px 20px;font-weight:600}
 .ready span{display:block;font-weight:400}
-.ln{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:8px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
-.ln:first-of-type{border-top:0}
+.ln{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:6px 0;overflow-wrap:anywhere}
 .ln time{color:var(--ink3);font-size:13px;font-variant-numeric:tabular-nums}
 .none{color:var(--ink3);margin:0}
 .foot{color:var(--ink3);font-size:13px;line-height:20px;margin:0}

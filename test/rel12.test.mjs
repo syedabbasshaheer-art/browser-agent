@@ -39,6 +39,14 @@ test("a board that is not on a first run gets no opening page, and a title given
 test("a folder whose name is already a name keeps it", () => {
   const d = folder("Maya Films"); run(d, "init");
   assert.equal(JSON.parse(fs.readFileSync(path.join(d, ".cockpit/config.json"), "utf8")).title, "Maya Films");
+  for (const [name, want] of [["notes.v2", "notes.v2"], ["iOS-app", "iOS App"], ["next.js-blog", "Next.js Blog"]]) {
+    const x = folder(name); run(x, "init");
+    assert.equal(JSON.parse(fs.readFileSync(path.join(x, ".cockpit/config.json"), "utf8")).title, want);
+  }
+  const y = folder("t"); run(y, "init", "--title", "iPhone repairs | Maya");
+  assert.equal(JSON.parse(fs.readFileSync(path.join(y, ".cockpit/config.json"), "utf8")).title, "iPhone repairs | Maya", "a title typed by hand is kept as typed");
+  const z = folder("u"), long = run(z, "init", "--title", "x".repeat(90));
+  assert.notEqual(long.status, 0); assert.match(long.stderr + long.stdout, /limit is 80/);
 });
 
 test("a logged line earns its reminder after half a minute, and the reminder may repeat within a minute", () => {

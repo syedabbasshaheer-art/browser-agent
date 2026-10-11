@@ -18,10 +18,12 @@ export function captureReplies(session, transcript, { final = false } = {}) {
     if (!CFG.LOG_REPLIES || !transcript || !fs.existsSync(transcript)) return 0;
     const mark = FILES.local + "/replies-" + sid(session) + ".json";
     const last = readJSON(mark, {}).uuid || null;
-    const list = repliesIn(readTail(transcript), last);
-    if (!list.length) return 0;
+    const seen = repliesIn(readTail(transcript), last);
+    if (!seen.length) return 0;
+    const list = seen.filter((r) => !/^sent\.?$/i.test(String(r.text).trim()));   // "Sent." after a send is not news for the board
+    if (!list.length) { writeJSON(mark, { uuid: seen[seen.length - 1].uuid, at: Date.now() }); return 0; }
     list.forEach((r, i) => events.append("claude.reply", { text: r.text, src: r.uuid, ...(final && i === list.length - 1 ? { final: true } : {}) }));
-    writeJSON(mark, { uuid: list[list.length - 1].uuid, at: Date.now() });
+    writeJSON(mark, { uuid: seen[seen.length - 1].uuid, at: Date.now() });
     return list.length;
   } catch { return 0; }
 }

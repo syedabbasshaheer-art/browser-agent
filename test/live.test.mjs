@@ -322,8 +322,7 @@ test("push: a batch holds 50 writes, a backlog is sent in turns, and lines older
     assert.deepEqual(ids(batch, "delete"), [], "nothing to delete yet");
     sent.push(...ids(batch, "set"));
     high = Number(out[1].match(/^Highest offset: (\d+)/)[1]);
-    assert.equal(out.length, turn < 3 ? 4 : 3, "it says when more lines wait, and ends with the writes on one line");
-    assert.deepEqual(JSON.parse(out[out.length - 1].replace(/^Its writes: /, "")), batch);
+    assert.equal(out.length, turn < 3 ? 3 : 2, "it says when more lines wait; a batch this long is not also printed on one line");
     if (turn < 3) assert.match(out[2], new RegExp("^" + (150 - 50 * turn) + " more lines wait"));
     assert.equal(cli(dir, "push", "--sent", String(high)).status, 0);
   }

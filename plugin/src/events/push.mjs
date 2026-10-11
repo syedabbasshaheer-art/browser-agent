@@ -48,6 +48,7 @@ export function unsentLines() {
   return events.read({}).filter((e) => isLine(e) && e.offset > st.last);
 }
 
+export const INLINE_MAX = 12;   // a batch of up to this many writes is also printed on one line, so sending needs no step to read the file
 export function pushBatch({ prune = true } = {}) {
   const st = readPushed();
   // No published board: there is nowhere to send a line, so nothing is prepared and nothing is written.
@@ -81,7 +82,7 @@ export function pushBatch({ prune = true } = {}) {
   const pending = Object.fromEntries(Object.entries(st.pending).slice(-20));
   pending[high] = { add: send.map((e) => e.offset), del: dels };
   writePushed({ last: st.last, have: st.have, pending });
-  return { file: file.replaceAll("\\", "/"), high, sets: send.length, deletes: dels.length, waiting: unsent.length - send.length, warning: st.warning };
+  return { file: file.replaceAll("\\", "/"), high, sets: send.length, deletes: dels.length, waiting: unsent.length - send.length, warning: st.warning, line: writes.length <= INLINE_MAX ? JSON.stringify(writes) : "" };
 }
 
 export function recordSent(v) {

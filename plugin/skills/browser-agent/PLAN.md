@@ -19,8 +19,10 @@ first one is short.
 1. **Pass one, a few minutes: goal 1.** Do step 1 (read the folder) and only the Now and Next rungs of step 3.
    Write goal 1 alone into the record: the next step any practitioner would take, built on what exists, with its
    cards in full, and one or two `DONE` cards for the finished work you saw. No field study yet and no web
-   search: goal 1 comes from the folder. `lint`, `build`, publish, and say so (SKILL.md gives the exact line).
-   The board now shows something that is plainly theirs.
+   search: goal 1 comes from the folder. Write the record with your file-write tool, never with a shell command:
+   a long text passed through a shell loses its quotes. `lint`, `build`, publish, and say so (SKILL.md gives
+   the exact line). The board now shows something that is plainly theirs. Where nothing can be published (no
+   board address, or a run that only writes the plan), write both passes into the record in one go.
 2. **Pass two: everything after.** Now do step 2 (know the field), the rest of step 3 (the ladder) and step 4,
    and write the goals that follow goal 1. Goal 1 may be sharpened by what you learned, but its card ids stay.
    Then steps 6 and 7.
@@ -119,6 +121,10 @@ one of your questions on the board (step 4).
 **Nothing about the person is stated as fact unless the folder says it.** "This turns a pastime into a result"
 claims it is a pastime. Either it is in the folder, or it is an "Assumed:" row, or it is not written.
 
+**When the person's own notes and the folder disagree, the folder is what you count.** A note says "Act 1 done,
+31,000 words" and the files hold 5,683: plan from what is there, write both numbers in one Decisions row, and
+make it one of your questions. Do not mark work done on the strength of a note.
+
 ## 4. Do not ask before the board: assume, and ask on the board
 
 The person's first minutes belong to the board, not to a list of questions in the terminal. So do not use the
@@ -127,7 +133,8 @@ AskUserQuestion tool here. For everything the folder does not answer:
 - Take the most reasonable answer and write the plan with it.
 - Record it in the Decisions table starting with "Assumed:", so it is visible on the board.
 - Keep a list of the assumptions that would change the plan if they were wrong: four at most. Step 7 turns each
-  into a question on the board, with your assumption as the first choice.
+  into a question on the board, with your assumption as the first choice. You may record more "Assumed:" rows
+  than that; only the four that would change the plan most become questions.
 
 The questions worth a slot are the ones that move the ladder: what this is for (a pastime, a portfolio, an income),
 who it is for (which audience or channel comes first), how much time a week it gets, and what may be spent on
@@ -289,7 +296,20 @@ before you publish. This is the check that matters most. Then three passes, each
   A file nobody used is usually the detail that would have made the plan theirs (a duplicate, a gap in the dates,
   an offer nobody followed up, a column in a sheet).
 - **The number pass.** Every number in a goal, a card and a Decision is one you counted, and the sums agree with
-  each other (a goal's end state does not contradict a card inside it).
+  each other (a goal's end state does not contradict a card inside it). The first Decisions row, how you read the
+  project, gets this pass too: it is the row most often wrong. Count each kind of thing by its own kind (lines of
+  the pages are not lines of every file; 14 dishes in 15 files is said as that). A word that is true of one file
+  ("cinematic", "9:16") is not said of all of them.
+- **The reach pass.** Read each goal's name, then only its own cards. If the cards, all done, would not make
+  the name true (42 members from three cards that write to four people; ten tutors from one card), the name is
+  too big: name the goal for what its cards reach, and leave the larger number to a later goal or to the one
+  line. A number the folder does not give (ten tutors, eight weeks, five hours) is an "Assumed:" row or it is
+  not written.
+- **The done pass.** A `DONE` card stands for finished work the plan builds on. An old file the plan does not
+  use is not a card. One or two are enough; none is fine.
+- **The names pass.** A goal's name is one short sentence with a verb, not a headline: "Five shorts are public,
+  one a week", not "Five shorts live: one a week". No colon in a goal's name or a card's title, and no title of
+  one word: "Choose between burning and selling the ledger", not "Choose".
 - **The practitioner pass.** Name three things someone who does this work for a living would ask on reading the
   plan ("where does it go live?", "who collects the money?", "what is the offer?"). Each has a card, or a line in
   the watch list. No goal's end state depends on something the watch list says may not be possible, and no goal

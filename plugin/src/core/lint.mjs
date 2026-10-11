@@ -55,6 +55,10 @@ export function planLint(rec, { first = false } = {}) {
     const words = (s) => String(s || "").trim().split(/\s+/).filter(Boolean).length;
     for (const g of goals) if (words(g.title) > FIRST.goalWords)
       add("warn", `Goal ${g.n}'s name is ${words(g.title)} words: say its end state in ${FIRST.goalWords} or fewer, and put the detail in its one line.`, { goal: g.n });
+    for (const g of goals) if (/[:;]/.test(String(g.title || "")))
+      add("warn", `Goal ${g.n}'s name is a headline with a colon: write it as one short sentence with a verb, the state the work ends in.`, { goal: g.n });
+    for (const c of cards) if (/:/.test(String(c.title || "")) || words(c.title) < 2)
+      add("warn", `Card ${c.id}'s title ("${c.title}") is a label, not a title: start with a verb, say what is done, and use no colon.`, { card: c.id });
     if (goals.length > FIRST.goals) add("warn", `The plan has ${goals.length} goals: a first plan reads best with four to ${FIRST.goals}.`);
     if (cards.length > FIRST.cards)
       add("warn", `The plan has ${cards.length} cards: a first plan is ${FIRST.cards} at most. Plan the first two goals in full and give each later goal two or three larger cards.`);

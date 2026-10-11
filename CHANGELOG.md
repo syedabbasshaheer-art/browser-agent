@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.13
+
+- Fixes from an independent review of 0.0.12. A request that was accepted no longer says the agent is working on it for ever; the time the agent was told survives an answer; the reminder to send no longer feeds on the agent's own short replies; a long batch is no longer printed on one line; a title you type is kept as you typed it, and a folder called `next.js-blog` is no longer taken apart at the dot.
+- A security scan found one gap, now closed: someone you shared the board with could make your Update now, goal and card-close buttons show a waiting state. Nothing could be applied that way; the buttons are now yours alone on the page too.
+- The opening page is white with no lines between its rows, as the board's own style asks.
+- The first plan, after a second trial: a goal's name is a short sentence, not a headline with a colon; a card's title is never one word; a goal is named for what its own cards reach; a finished card stands only for work the plan builds on; and when your notes and your folder disagree, the folder is what is counted and the difference becomes a question.
+
 ## 0.0.12
 
 - A first run shows a page within seconds. The agent first publishes a small opening page, a few kilobytes, that shows the five steps and its lines as they arrive; the full board replaces it at the same address when goal 1 is written.

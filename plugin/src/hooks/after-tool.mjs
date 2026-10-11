@@ -44,14 +44,12 @@ function pulse(session) {
   finally { if (mine) { try { fs.rmSync(PULSE_LOCK, { force: true }); } catch { /* it goes stale by itself */ } } }
 }
 
-// The batch's writes on one line, so sending needs no step to read the file first.
-function writesLine(file) { try { return JSON.stringify(JSON.parse(fs.readFileSync(file, "utf8"))); } catch { return "(read them from " + file + ")"; } }
 // Lines were logged and never sent: the owner sees nothing until they are. One reminder, with the batch ready.
 const SEND_STAMP = FILES.local + "/send-nudge.json";
 function sendNudge(tool) {
   try {
     if (tool === "ArtifactData") return "";          // the agent is sending right now
-    const due = unsentDue(unsentLines());
+    const due = unsentDue(unsentLines().filter((e) => e.type !== "claude.reply"));
     if (!due) return "";
     let last = 0; try { last = JSON.parse(fs.readFileSync(SEND_STAMP, "utf8")).at || 0; } catch {}
     if (Date.now() - last < SEND_GAP_SEC * 1000) return "";
@@ -59,7 +57,7 @@ function sendNudge(tool) {
     if (!b.file) return "";
     writeJSON(SEND_STAMP, { at: Date.now() });
     const cli = fileURLToPath(new URL("../cli/cockpit.mjs", import.meta.url));
-    return `[board] ${due.count} line${due.count === 1 ? " is" : "s are"} logged but not on the board, the oldest for ${due.minutes ? due.minutes + " min" : "under a minute"}. The user is watching the board and sees nothing until you send: one ArtifactData batch call with the writes in ${b.file}, then run: node "${cli}" push --sent ${b.high} The writes: ${writesLine(b.file)}`;
+    return `[board] ${due.count} line${due.count === 1 ? " is" : "s are"} logged but not on the board, the oldest for ${due.minutes ? due.minutes + " min" : "under a minute"}. The user is watching the board and sees nothing until you send: one ArtifactData batch call with the writes in ${b.file}, then run: node "${cli}" push --sent ${b.high}${b.line ? " The writes: " + b.line : ""}`;
   } catch { return ""; }
 }
 
