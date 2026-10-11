@@ -5,43 +5,124 @@ project). You write the plan; the scripts check it. `$P` is the plugin root, two
 
 The result is a **draft**: the user reviews it on the board and accepts it there. Nothing starts before that.
 
+**The first draft is the whole first impression.** Most folders hold no roadmap, no goals and no task list: only the
+work itself, and often not code at all (videos, designs, documents, a spreadsheet, a shop's photos). A plan that
+could belong to any project ("Improve quality", "Grow the audience") tells the person the board did not understand
+them, and they leave. A plan that names their own files, their own field's next steps and a future they recognise
+as theirs is why they stay. Nine tenths of the work is getting the goals right. Spend your effort on steps 1 to 4.
+
 ## 0. Make sure the cockpit is on
 
 If the project has no `.cockpit/config.json`, you are in a first run: follow `start` in SKILL.md, which opens a
 placeholder board (`init --planning`) before you come back here. You replace the placeholder's cards with the real plan.
 
-## 1. Read the project first
+## 1. Read the project, whatever it is made of
 
-Spend your effort here. A plan made from what is really in the folder beats one made from questions.
+A plan made from what is really in the folder beats one made from questions.
 
-- The project's own words: `README*`, `docs/`, any notes, plans, TODO lists, issue lists, `CLAUDE.md`, `AGENTS.md`.
-- What exists: the folder layout, the package or build files, the entry points, the tests, the deploy or CI files.
-- What happened: `git log --oneline -30` and uncommitted changes, to see what is finished and what is under way.
-- If `.cockpit/BOARD.md` already holds a real plan (not the five starter cards), you are **revising**, not
+**Every project:**
+
+- The project's own words: `README*`, `docs/`, any notes, plans, briefs, TODO lists, `CLAUDE.md`, `AGENTS.md`.
+- What happened: `git log --oneline -30` and uncommitted changes if it is a repository; otherwise the files' dates.
+- If `.cockpit/BOARD.md` already holds a real plan (not the starter or placeholder cards), you are **revising**, not
   replacing: keep every card id, keep DONE cards as they are, and change only what the user asked or what is wrong.
 
-Write down, for yourself: what the project is, who it is for, what "finished" would be, what is already done, what
-is clearly missing, and what you could not find out.
+**A codebase:** the folder layout, the package or build files, the entry points, the tests, the deploy or CI files.
 
-## 2. Do not ask before the board: assume, and ask on the board
+**Anything else (media, documents, designs, data):** the files are the evidence. Take an inventory before you judge:
+
+- Count the files by kind, and list their names, sizes and dates. Names and folders show how the person thinks
+  about the work (`final_v3`, `reel-for-insta`, `client-acme/`). Dates show the rhythm: one burst, or one a week.
+- Open what you can. Read documents and scripts. Look at images and video frames (the Read tool shows images; if
+  `ffprobe` or a similar tool is installed, read a video's length, size and shape, otherwise infer from the file).
+  A tall 9:16 file under a minute is a short for a phone feed; a wide 16:9 file of ten minutes is something else.
+- Note the tools the files betray (an export name, a project file, a watermark, metadata), the subjects, the
+  languages, how polished the newest piece is against the oldest, and anything made for someone else (a client, a
+  channel, a class).
+- Note what is absent: no scripts, no thumbnails, no captions, no schedule, no record of what was published or how
+  it did. What a practitioner of this field would expect to find and did not is where the next work lies.
+
+Write down, for yourself: what the project is, who it is for, what is already done (with counts), what the person
+is plainly good at, what is missing, and what you could not find out.
+
+## 2. Know the field before you plan in it
+
+Name the field in one sentence ("short AI-generated cooking videos for social feeds", "a bookkeeping tool for
+freelancers", "a wedding photographer's portfolio"). Then learn how that field works, because the plan must sound
+like it was written by someone who does this for a living:
+
+- **How the work is made:** the usual stages from idea to finished piece, and the tools at each stage, from the
+  simple ones the person uses to the ones professionals use.
+- **How people get better at it:** what separates a beginner's piece from a professional's (in video: script,
+  pacing, sound, consistency of a character or style, a hook in the first seconds; in software: tests, releases,
+  support). These become the craft steps of the plan.
+- **Where the work goes:** the channels, formats and audiences of the field, and what each one demands.
+- **What success is measured by:** the numbers practitioners watch (retention, saves, enquiries, paying users),
+  and how the work turns into income or standing, if that is where the person may be heading.
+- **What is changing:** a new tool or format that someone in this field would want to try this year.
+
+If a web search tool is available, use it: three or four searches at most, on the points above, for this exact
+field. If none is available, use what you know, and say so in a Decisions row ("Assumed from general knowledge of
+the field, not checked"). Never invent a statistic, a price or a tool's feature: state only what you found or know.
+
+## 3. Place the person, and draw the ladder
+
+The board looks forward. What is done is done: it is shown, briefly, and never re-planned. Write, for yourself,
+the four rungs of **this** project:
+
+| Rung | What it is | Example: a folder of 14 short AI-made cooking videos, all one style, none published |
+|---|---|---|
+| **Now** | What the folder proves, with counts | 14 finished shorts of 20 to 40 seconds, one tool, one look, no scripts kept, no channel |
+| **Next** | The step any practitioner would take next week, built on what exists | Publish the best five on one channel, on a fixed weekly rhythm, and write down how each did |
+| **Further** | The same work made deeper and wider | A recurring series with a kept script format and sound; a second subject; the same pieces re-cut for two more channels |
+| **Evolved** | Where this leads if it is taken seriously | A small studio: a repeatable pipeline, a style people recognise, a longer flagship piece, first paid work |
+
+Stretch the project along the lines that fit it. Pick three to five; do not use all of them:
+
+- **Depth:** the same thing, made better (longer, more detailed, better finished).
+- **Range:** the same skill on a new subject, field or format.
+- **Reach:** more channels, a wider or better-chosen audience, other languages.
+- **Craft:** better tools and techniques; from simple to professional.
+- **System:** from one-off pieces to a repeatable way of working: templates, a rhythm, a checklist, a library.
+- **Outcome:** from a pastime to a result: a portfolio, a following, clients, income.
+
+The person's own ambition decides how far the ladder goes. Read it from the folder (a hobbyist's folder and an
+agency's look different). Where you cannot tell, assume the next rung up from where they are, and make it a
+question on the board (step 4).
+
+## 4. Do not ask before the board: assume, and ask on the board
 
 The person's first minutes belong to the board, not to a list of questions in the terminal. So do not use the
-AskUserQuestion tool here. For everything the folder does not answer (where data lives, what finished means, a
-price, a limit, a date, what is out of scope):
+AskUserQuestion tool here. For everything the folder does not answer:
 
 - Take the most reasonable answer and write the plan with it.
 - Record it in the Decisions table starting with "Assumed:", so it is visible on the board.
-- Keep a list of the assumptions that would change the plan if they were wrong: four at most. Step 5 turns each
+- Keep a list of the assumptions that would change the plan if they were wrong: four at most. Step 7 turns each
   into a question on the board, with your assumption as the first choice.
 
-Never ask what the folder already answers. If the person has already told you something in this conversation,
-that is an answer, not an assumption.
+The questions worth a slot are the ones that move the ladder: what this is for (a pastime, a portfolio, an income),
+who it is for (which audience or channel comes first), how much time a week it gets, and what may be spent on
+tools. Never ask what the folder already answers. If the person has already told you something in this
+conversation, that is an answer, not an assumption.
 
-## 3. Write the plan into `.cockpit/BOARD.md`
+## 5. Write the plan into `.cockpit/BOARD.md`
 
 Keep the header block from the template. Then, in this order:
 
-**Goals** (3 to 7). A goal is an outcome someone would recognise, not a category of work. One line each.
+**Goals** (4 to 6), in the order of the ladder. A goal is an outcome someone would recognise, not a category of
+work. Together they read as one journey from where the person is to where this could go.
+
+- **Goal 1 starts from what exists and can begin today.** It uses the finished work in the folder; it never asks
+  the person to set something up first, and it never redoes what is done.
+- **The middle goals** are the Further rung: each takes one line of stretch (depth, range, reach, craft, system).
+- **The last goal** is the Evolved rung: ambitious, and still concrete enough to check.
+- **Name** each goal as its end state, in the field's own words, with a number or a named thing wherever one is
+  true: "Five shorts live on one channel, one a week", not "Publishing". **One line** says what is true when it is
+  reached.
+- **The mix:** across the goals there is operational work (make it repeatable), creative work (ideas, formats and
+  pieces only this field has) and aspirational work (a wider result). A plan with only chores, or only dreams, fails.
+- **The test:** read each goal's name and line as a stranger to this project. If it could sit on a board for any
+  other project in any other field, it says nothing. Rewrite it until it could only be this one.
 
 ```
 ## GOALS
@@ -73,7 +154,7 @@ The columns, exactly:
 |---|---|---|
 | ID | `<goal>.<n>` | Never reused, never renumbered |
 | ST | `BACKLOG`, `DOING`, `DONE`, `BLOCKED` | New work is `BACKLOG`. Use `DONE` only for work you saw finished in the folder, and add `• Verified: <what you saw>`. This is allowed while the first plan is being written (before `planned`); after that a draft closes nothing until the owner accepts it. Never write `START`: that is the user's hand-over |
-| OWN | `agent`, `human` | `human` = only the user can do it: a decision, a payment, an account, a sign-off |
+| OWN | `agent`, `human` | `human` = only the user can do it: a decision, a payment, an account, a sign-off, and any making that happens outside this computer |
 | TYPE | `code`, `content`, `config`, `verify`, `account`, `decision` | The kind of work |
 | EFF | `Q`, `S`, `L` | About 15 minutes, about an hour, more than an hour |
 | GATE | `-`, `approval`, `money` | The user must approve (or pay) before this card can be done. Use it on any card, agent or human, that should not happen without their yes |
@@ -84,6 +165,22 @@ The columns, exactly:
 The Card cell: `**Title.**` (ten words or fewer, starting with a verb), then one or two sentences, then pointers
 separated by ` • `. Use these labels so the board can lay the card out: `Why:` (always), `Where:`, `Step:` (one per
 step; for a human card, say exactly what to click or decide), `Check:`, `Note:`. No `|` inside a cell.
+
+**What is already done.** Show it, so the person sees you read their work, and keep it short: at most five `DONE`
+cards in all, each standing for a body of finished work ("Make the first 14 shorts"), each with `• Verified:` and
+the count or the file names you saw. Do not write one card per finished file.
+
+**Detail follows distance.** The first two goals are planned in full: every card a single sitting, with its steps.
+Later goals get three to five larger cards each, enough to show the road; they are split when their turn comes.
+Twelve to forty cards is normal for a first draft. Do not pad.
+
+**Who does a card, in a project that is not code.** Be honest about what you can do from this computer. You can
+research, write (scripts, outlines, prompts, captions, briefs, checklists, schedules), organise and rename files,
+compare pieces, and keep the record of what was published and how it did when the person gives you the numbers.
+You cannot record, film, publish to an account or judge taste: those cards are `human`, with steps that say
+exactly what to open and do, and each is paired with an agent card that prepares it (the script before the
+recording, the caption and the checklist before the upload). The creative choice stays the person's; give them
+options to choose from, not instructions.
 
 **How to write a card's words.** The card is read by someone who was not in the conversation. Write for them.
 
@@ -96,14 +193,18 @@ step; for a human card, say exactly what to click or decide), `Check:`, `Note:`.
 - **Step:** one action each, in the order they are done, starting with a verb. For a card that belongs to the user,
   name what to open and what to press.
 - **Check:** what to run or look at, and what result means it worked.
-- Use the plain name of a thing, then explain it once if a newcomer would not know it. No shorthand from the
-  conversation, no clipped fragments, no slogans, no words that only add emphasis.
+- Use the field's own plain words, and name the person's own files, pieces and channels. Explain a term once if a
+  newcomer would not know it. No shorthand from the conversation, no clipped fragments, no slogans, no words that
+  only add emphasis.
 - Read it back as a stranger. If a sentence could be on any card in any project, it says nothing: replace it.
 
 **Sizing.** A card is one sitting of work with one clear finish. If it needs "and" twice, split it. If it takes five
-minutes, fold it into its neighbour. Thirty to sixty cards is normal for a real project; do not pad.
+minutes, fold it into its neighbour.
 
-**Decisions and risks**, after the last goal. The Goal column places each row under its goal on the board.
+**Decisions and risks**, after the last goal. The Goal column places each row under its goal on the board. The
+first Decisions row says, in one sentence, how you read the project: what it is, where it stands and where the
+plan takes it ("Read as: 14 unpublished cooking shorts in one style; the plan goes from a first channel to a
+recognisable series").
 
 ```
 ## Decisions — settled, with the reason
@@ -120,37 +221,47 @@ minutes, fold it into its neighbour. Thirty to sixty cards is normal for a real 
 ```
 
 **The finish.** Put the id of the card that means "the project is finished" in `.cockpit/config.json` as
-`"finish": "<id>"`. Everything it depends on, directly or not, becomes the finish path on the board.
+`"finish": "<id>"`: the last card of the last goal. Everything it depends on, directly or not, becomes the finish
+path on the board.
 
-## 4. Check it, and fix every finding
+## 6. Check it, and fix every finding
 
 ```
 node "$P/src/cli/cockpit.mjs" lint
 node "$P/src/cli/cockpit.mjs" build
+node "$P/src/cli/cockpit.mjs" goals --brief
 ```
 
 `lint` prints what a reader would trip on: a card with no reason or no way to check it, a goal that cannot start, a
 phase with no end state. Fix all errors and all warnings, then run both again until they are clean. Do not publish a
 plan with findings.
 
-## 5. Publish it as a draft, say so, and ask on the board
+`goals --brief` prints the goals as the person will first see them. Read them once more against the test in step
+5: each one specific to this project, the first one startable today, the last one worth wanting, and the set
+reading as one journey. Rewrite any that fail before you publish. This is the check that matters most.
+
+## 7. Publish it as a draft, show the goals, and ask on the board
 
 1. `node "$P/src/cli/cockpit.mjs" planned`. It ends the "plan is being written" state, keeps the plan a draft, and
    runs `lint` and `build` once more. (In a project that was never in that state, set `"plan": "draft"` in
    `.cockpit/config.json` and run `build`.)
-2. Publish to the board's address (the `publish` command in SKILL.md).
+2. Publish to the board's address (the `publish` command in SKILL.md). A draft opens on the List: every goal with
+   what it ends in, its cards under it, and Accept plan at the top.
 3. `say "Your plan is ready: N cards in G goals. Reload this page to see it, then accept it." --kind result`, and
    send its batch.
 4. For each assumption on your list, at most four:
    `ask "<the question, in one plain sentence>" --card <the card it changes> --topic <a short key> --choices "<your assumption>, <the alternative>, <another>"`.
    Your assumption comes first. Send the batch each prints. They appear under Needs you; the answers arrive
    through `inbox`, and you then correct the cards and the Decisions row.
-5. Tell the person, with the table in SKILL.md's `start`: the address, what to do on the board, what to leave to
-   you, and that nothing more is needed in the terminal.
+5. Show the plan in the terminal: run `node "$P/src/cli/cockpit.mjs" goals` and give its output to the person
+   exactly as printed, in a code block, under one sentence that says how you read their project and where the plan
+   takes it. Then the table in SKILL.md's `start`: the address, what to do on the board, what to leave to you, and
+   that nothing more is needed in the terminal.
 
 ## Keeping the plan alive
 
 The plan changes as the project does. When the user asks for a change, in the terminal or on the board, edit the
 record: add a card with the next free id in its goal, split a card (keep the old id for the first half), change a
 dependency, move a card to another phase. Never delete a DONE card. Then `lint`, `build` and publish. When work
-reveals something the plan did not have, add the card yourself and say so.
+reveals something the plan did not have, add the card yourself and say so. When a later goal's turn comes, split
+its large cards into single sittings before the first one starts.

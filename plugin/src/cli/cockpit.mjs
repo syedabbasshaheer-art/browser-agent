@@ -35,7 +35,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { parseLaunch } from "../core/parse.mjs";
+import { parseLaunch, splitCard } from "../core/parse.mjs";
 import { computeBoard } from "../core/engine.mjs";
 import { build, digest, FILES } from "../build/build.mjs";
 import { spawnSync, spawn } from "node:child_process";
@@ -49,7 +49,8 @@ import { buildPack, PACK_CAP } from "../core/pack.mjs";
 import * as memory from "../events/memory.mjs";
 import { buildFeed } from "./feed.mjs";
 import { entryOf, questionsOf, lastChanges, SAY_KINDS } from "../events/feed.mjs";
-import { pushBatch, recordSent, hasBoard, BATCH_MAX } from "../events/push.mjs";
+import { pushBatch, recordSent, readSends, hasBoard, BATCH_MAX } from "../events/push.mjs";
+import { loopClock, clockLines } from "../core/clock.mjs";
 import { heartbeatDecision, heartbeatChecklist, heartbeatStatus, shouldLogSkip, lockAgeMin, minuteOfDay } from "../core/heartbeat.mjs";
 import { applyDecision, applyAutoSet } from "../core/apply.mjs";
 import { desired, loadActual, diff, batches, describe } from "../core/mirror.mjs";
@@ -62,7 +63,7 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 const opt = (k, d) => { const i = argv.indexOf("--" + k); return i > 0 ? (argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : true) : d; };
 const today = () => new Date().toISOString().slice(0, 10);
-const NEEDS_COCKPIT = ["build", "status", "lint", "link", "open", "planned", "inbox", "sync", "events", "say", "ask", "answer", "turn-end", "next", "pack", "tidy", "heartbeat", "remember", "push", "feed"];
+const NEEDS_COCKPIT = ["build", "status", "clock", "goals", "lint", "link", "open", "planned", "inbox", "sync", "events", "say", "ask", "answer", "turn-end", "next", "pack", "tidy", "heartbeat", "remember", "push", "feed"];
 
 // Where an action was written decides its level (the page database's rules enforce who can write
 // there). actions/: Contributors and up. approvals/: the owner only.
@@ -389,6 +390,38 @@ const SAY_USAGE = 'say needs text: cockpit.mjs say "<what you did>" [--card ID] 
 export const NEXT_MAX = 2, NEXT_LEN = 60;
 const bare = (v) => (typeof v === "string" && !v.startsWith("--") ? v : "");
 
+// ── goals: the plan as the terminal shows it: every goal with what it ends in, and its cards under it ──
+function goalsText(rec, { brief = false, width = 78 } = {}) {
+  const cut = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
+  const wrap = (s, n, pad) => { const out = []; let line = ""; for (const w of String(s).split(/\s+/)) { if (line && (line + " " + w).length > n) { out.push(line); line = w; } else line = line ? line + " " + w : w; } if (line) out.push(line); return out.map((l) => pad + l); };
+  const done = rec.cards.filter((c) => c.st === "DONE").length;
+  const L = [`Your plan: ${rec.goals.length} goal${rec.goals.length === 1 ? "" : "s"}, ${rec.cards.length} card${rec.cards.length === 1 ? "" : "s"}${done ? " (" + done + " already done)" : ""}`, ""];
+  for (const g of rec.goals) {
+    const mine = rec.cards.filter((c) => c.g === g.n), d = mine.filter((c) => c.st === "DONE").length;
+    const tally = mine.length && d === mine.length ? "done" : `${d} of ${mine.length} done`;
+    L.push(`  GOAL ${g.n}  ${cut(g.title, width - 24)}`.padEnd(width - tally.length) + tally);
+    if (g.sub) L.push(...wrap(g.sub, width - 10, "          "));
+    if (!brief) for (const c of mine) {
+      const what = c.st === "DONE" ? "done" : c.st === "START" || c.st === "DOING" ? "in progress" : c.own === "human" ? "yours" : c.gate && c.gate !== "-" ? "needs your yes" : "";
+      L.push(`            ${c.id.padEnd(5)} ${cut(splitCard(c.t).title, width - 20 - what.length)}`.padEnd(width - what.length) + what);
+    }
+    L.push("");
+  }
+  return L.map((l) => l.trimEnd()).join("\n").trimEnd();
+}
+function goals() {
+  const r = build({ write: false });
+  if (!r.rec.goals.length) { console.log("The record has no goals yet."); process.exitCode = 1; return; }
+  console.log(goalsText(r.rec, { brief: opt("brief", false) === true }));
+}
+// ── clock: how fast the three loops between the board and the agent turn, from what was logged ──
+function clock() {
+  const days = /^\d{1,3}$/.test(String(opt("days"))) ? Number(opt("days")) : 0;
+  const c = loopClock({ events: events.read({}), sends: readSends(), since: days ? Date.now() - days * 86400000 : 0 });
+  if (opt("json", false)) { console.log(JSON.stringify(c)); return; }
+  console.log(`How fast the board and the agent reach each other${days ? ", over the last " + days + " day" + (days === 1 ? "" : "s") : ""}:`);
+  clockLines(c).forEach((l) => console.log("  " + l));
+}
 // ── push: every line not sent yet, as ONE batch of new documents live/u<offset> (src/events/push.mjs). ──
 function pushSent(v) {
   console.log(`Recorded: lines up to #${recordSent(v)} are on the board.`);
@@ -870,7 +903,9 @@ try {
     remember(bareArgs[0], bareArgs[1]);
   }
   else if (cmd === "push") push();
+  else if (cmd === "clock") clock();
+  else if (cmd === "goals") goals();
   else if (cmd === "feed") feed();
   else if (cmd === "verbs") Object.entries(VERBS).forEach(([v, s]) => console.log(`${v.padEnd(14)} level ${s.level.padEnd(9)} risk ${s.risk.padEnd(7)} ${s.mode.padEnd(8)} args ${s.args.concat((s.optional || []).map((x) => x + "?")).join(", ")}`));
-  else { console.log("usage: cockpit.mjs init [--title T] [--planning] | link <address> [--open] | open | planned | build | status | inbox|sync --from <dir> | events [--since N] [--consumer NAME --commit] [--follow] | say <text> [--card ID] [--step i/n] [--kind K] [--next 'A | B'] | answer <text> [--to ACTION] | ask <question> --card ID [--topic key] [--choices A,B] | turn-end <text> --next <text> | push [--sent N] | next [--start] | pack [--json] | remember decision|state <text> | tidy [--check] | heartbeat [--status] | lint | feed [--version N] | verbs"); process.exitCode = 2; }
+  else { console.log("usage: cockpit.mjs init [--title T] [--planning] | link <address> [--open] | open | planned | build | status | inbox|sync --from <dir> | events [--since N] [--consumer NAME --commit] [--follow] | say <text> [--card ID] [--step i/n] [--kind K] [--next 'A | B'] | answer <text> [--to ACTION] | ask <question> --card ID [--topic key] [--choices A,B] | turn-end <text> --next <text> | push [--sent N] | clock [--days N] [--json] | goals [--brief] | next [--start] | pack [--json] | remember decision|state <text> | tidy [--check] | heartbeat [--status] | lint | feed [--version N] | verbs"); process.exitCode = 2; }
 } catch (e) { console.error("cockpit: " + e.message); process.exitCode = 1; }

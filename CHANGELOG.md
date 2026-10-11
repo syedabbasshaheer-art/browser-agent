@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.10
+
+- The first plan is written for your kind of work, code or not. The agent takes an inventory of the folder (videos, documents, designs, data), studies the field, places you on a ladder from what you have made to where it could go, and writes goals that lead up it.
+- A draft plan opens on the List: every goal with what it ends in, its cards under it, and Accept plan at the top. The terminal shows the same goals and cards.
+- The Path is drawn on the page itself, with its key at the top, and is one press away from the List.
+- Answering a question no longer makes the page blink: only the part that changed is redrawn.
+- A question's choices each stay on one line.
+- Several clicks in a few seconds ring the agent once. When the doorbell is busy the page waits and rings again by itself; your request is saved either way.
+- The status beside the Inbox names the one thing to do, with its card number: "Answer 1.2", "Next: start 1.3".
+- The status line on the Live page scrolls away with the page. Live and Board look the same when chosen and when not, and the one not chosen is easier to see.
+- The version is shown at the bottom of the Live page and of the menu.
+- `clock` reports how fast the board and the agent reach each other, from what was logged: a click until the agent took it, a line until it was on the board, a question until you answered it.
+- The agent is reminded to send a line to the board after one minute, not two.
+
 ## 0.0.9
 
 - Work the agent finds already finished in your folder is shown as done in the first plan, instead of waiting for you to accept the plan.

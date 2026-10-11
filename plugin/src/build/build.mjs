@@ -192,7 +192,7 @@ export function build({ write = true } = {}) {
     WIP: CFG.WIP, LAUNCH: CFG.LAUNCH, title: CFG.TITLE, repo: repoUrl(),
     liveWord: /noindex|hidden|not findable/i.test(live) ? "Hidden" : liveUrl === "#" ? "Not yet" : "Public",
     liveNote: (live.split(". ")[0] || "No Live row in the record").replace(/[.]$/, "") + ".",
-    tile: CFG.TILE ? CFG.TILE.label : "", record: CFG.RECORD, plan: CFG.PLAN, planning: CFG.PLANNING, update: updateNotice(),
+    tile: CFG.TILE ? CFG.TILE.label : "", record: CFG.RECORD, plan: CFG.PLAN, planning: CFG.PLANNING, update: updateNotice(), version: VERSION,
     rows: (rowsTxt.match(/[\d,]+/) || ["?"])[0],
     rowsNote: rowsTxt.replace(/^[\d,]+\s*—?\s*/, "") || "From the record",
   };

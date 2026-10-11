@@ -7,6 +7,7 @@
 //   hasBoard()                -> is there a published board to send to?
 //   pushBatch({ prune })      -> { file, high, sets, deletes, waiting } (file null when there is nothing to send)
 //   recordSent(n)             -> the last offset now recorded as sent (throws on a number that cannot be right)
+//   readSends()               -> [{ at, lags: [seconds each line waited] }], for the clock
 import fs from "node:fs";
 import path from "node:path";
 import { ROOT, LOCAL, ARTIFACT_URL } from "../build/config.mjs";
@@ -16,6 +17,8 @@ import { entryOf, answersOf, isLine } from "./feed.mjs";
 const DIR = path.join(ROOT, LOCAL);   // the same folder the CLI calls FILES.local
 const OUT = path.join(DIR, "cockpit");
 const PUSHED = path.join(DIR, "pushed.json");
+const SENDS = path.join(DIR, "sends.jsonl");   // one row per recorded send: when, and how long each line had waited
+const SENDS_KEEP = 400;
 export const LIVE_KEEP = 200;   // the page database keeps the newest 200 lines; older ones are listed for deletion
 export const BATCH_MAX = 50;    // one ArtifactData batch call takes at most 50 writes
 
@@ -93,5 +96,22 @@ export function recordSent(v) {
   const last = Math.max(st.last, n);                          // never backwards
   const pending = Object.fromEntries(Object.entries(st.pending).filter(([k]) => Number(k) > last));
   writePushed({ last, have, pending });
+  if (p && ints(p.add).length) noteSend(ints(p.add));
   return last;
+}
+
+// How long each line waited between being logged and being recorded as on the board. Kept beside the log, for
+// `cockpit clock`; a failure to write it never fails the send.
+function noteSend(offsets) {
+  try {
+    const want = new Set(offsets), now = Date.now();
+    const lags = events.read({}).filter((e) => want.has(e.offset) && e.at).map((e) => Math.max(0, Math.round((now - new Date(e.at).getTime()) / 1000)));
+    if (!lags.length) return;
+    let rows = []; try { rows = fs.readFileSync(SENDS, "utf8").split("\n").filter(Boolean); } catch { /* the first send */ }
+    rows.push(JSON.stringify({ at: new Date(now).toISOString(), lags }));
+    fs.writeFileSync(SENDS, rows.slice(-SENDS_KEEP).join("\n") + "\n");
+  } catch { /* the clock is a convenience */ }
+}
+export function readSends() {
+  try { return fs.readFileSync(SENDS, "utf8").split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); } catch { return []; }
 }

@@ -24,10 +24,10 @@ Ends with: a plan you have read and accepted
 
 | ID | ST | OWN | TYPE | EFF | GATE | DEPS | Card | DONE-WHEN |
 |---|---|---|---|---|---|---|---|---|
-| 1.1 | BACKLOG | agent | verify | Q | - | - | **Read the project.** The agent reads the README, the code, the tests and the recent history. • Why: A plan made from what is really in the folder beats one made from guesses. • Check: The Live page says what was found. | The Live page says what the agent found in the folder |
-| 1.2 | BACKLOG | agent | content | S | - | 1.1 | **Write the goals and the cards.** The agent turns what it read into goals, and each goal into cards with a reason and a finish line. • Why: This page is only as useful as the plan behind it. • Check: This placeholder is replaced by the real goals. | The real goals and cards are on this page |
+| 1.1 | BACKLOG | agent | verify | Q | - | - | **Read the project.** The agent reads everything in the folder, whatever it is made of: code, documents, pictures, videos, and the history of the work. • Why: A plan made from what is really in the folder beats one made from guesses. • Check: The Live page says what was found. | The Live page says what the agent found in the folder |
+| 1.2 | BACKLOG | agent | content | S | - | 1.1 | **Study the field, then write the goals.** The agent learns how your kind of work is done and grown, then writes goals that lead from what you have made to where it could go, and cards under each. • Why: This page is only as useful as the plan behind it. • Check: This placeholder is replaced by the real goals. | The real goals and cards are on this page |
 | 1.3 | BACKLOG | agent | content | Q | - | 1.2 | **Ask what the folder could not answer.** Anything the agent had to assume becomes a question for you on this page, with its best guess offered first. • Why: You answer with one click, and the plan is corrected. • Check: Questions appear under Needs you. | Each assumption is a question under Needs you |
-| 1.4 | BACKLOG | human | decision | Q | - | 1.3 | **Accept the plan.** Read the goals and cards, add a note on anything that is wrong, then press Accept plan. • Why: Nothing starts until you agree to it. • Step: Open the Inbox at the top right and press Accept plan. • Check: The Draft label becomes Accepted. | The plan is marked Accepted |
+| 1.4 | BACKLOG | human | decision | Q | - | 1.3 | **Accept the plan.** Read the goals and cards, add a note on anything that is wrong, then press Accept plan. • Why: Nothing starts until you agree to it. • Step: Press Accept plan at the top of the List. • Check: The Draft label becomes Accepted. | The plan is marked Accepted |
 
 ## Decisions — settled, with the reason
 

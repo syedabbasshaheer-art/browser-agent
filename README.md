@@ -9,7 +9,15 @@
 
 A plugin for [Claude Code](https://claude.com/claude-code) &nbsp;·&nbsp; one command to install &nbsp;·&nbsp; no server, no account, no dependencies
 
-<br>
+**Install it:** open a terminal in your project's folder and paste this one line. [More about installing](#install)
+
+</div>
+
+```bash
+claude plugin install browser-agent --marketplace syedabbasshaheer-art/browser-agent --scope project; claude "set up my board"
+```
+
+<div align="center">
 
 <img src="docs/images/demo.gif" alt="The board in use: steps arrive one by one, the agent asks a question, one press answers it, the work goes on; then the board and a card's chat" width="100%">
 

@@ -5,7 +5,7 @@
 // The after-tool hook uses this to remind the agent to post an update; the page uses the same idea to show
 // "No update for N min".
 export const QUIET_MIN = 6;    // minutes of silence before a reminder: the promise is a line about every eight minutes
-export const UNSENT_MIN = 2;   // a logged line older than this that is not on the board yet earns a reminder to send it
+export const UNSENT_MIN = 1;   // a logged line older than this that is not on the board yet earns a reminder to send it
 
 // Lines the agent logged that the board does not have. Pure: the lines waiting, and the clock, in.
 export function unsentDue(waiting, now = Date.now(), minAge = UNSENT_MIN) {

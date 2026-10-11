@@ -30,9 +30,10 @@ accept the plan. Do these in order, without asking them to type anything else:
    ```
    Setting up your board
      [ ] 1  A board opens in your browser          about a minute
-     [ ] 2  I read your project
-     [ ] 3  I write the plan: goals and cards      a few minutes
-     [ ] 4  You accept the plan on the board       the only thing I need from you
+     [ ] 2  I read your project: every file, whatever it is made of
+     [ ] 3  I study your field, so the plan fits it
+     [ ] 4  I write the plan: goals, then cards    a few minutes
+     [ ] 5  You accept the plan on the board       the only thing I need from you
 
    Claude Code will ask your permission to publish the board and to write to it.
    Choose "always allow" for those two, so the board can keep itself up to date.
@@ -42,21 +43,26 @@ accept the plan. Do these in order, without asking them to type anything else:
    `link <the address the Artifact tool returned> --open`. The page is this plugin's own build of the project's
    record, so publish it straight away. Then one line in the terminal: "Step 1 is done: your board is open in
    your browser. Watch the Live page there." and the same on the board: `say "The board is open. Next: reading
-   the project." --step 1/4`, and send its batch.
-3. **Write the plan**: read `PLAN.md` beside this file and follow it. Post one `say` line when you have read the
-   project (`--step 2/4`, with what you found) and one when the plan is written (`--step 3/4`, with the count of
-   goals and cards). Do not ask anything in the terminal: what you had to assume becomes a question on the board.
+   the project." --step 1/5`, and send its batch.
+3. **Write the plan**: read `PLAN.md` beside this file and follow it. The first draft is the whole first
+   impression: its goals must be this project's own, in its field's words. Post one `say` line when you have read
+   the project (`--step 2/5`, with what you found, in counts), one when you have studied the field (`--step 3/5`,
+   naming the field and where the person stands in it), and one when the plan is written (`--step 4/5`, with the
+   count of goals and cards and the name of the first and the last goal). Do not ask anything in the terminal: what
+   you had to assume becomes a question on the board.
 4. **Hand over**: `planned`, publish again to the same address, then
    `say "Your plan is ready: N cards in G goals. Reload this page to see it, then accept it." --kind result` (the
-   open page reacts to a line that begins "Your plan is ready"), then the questions from `PLAN.md` step 5.
-5. **Finish in the terminal with this table and nothing longer**, filled in:
+   open page reacts to a line that begins "Your plan is ready"), then the questions from `PLAN.md` step 7.
+5. **Finish in the terminal with the plan and this table, and nothing longer.** First one sentence saying how you
+   read the project and where the plan takes it, then the output of `node "$P/src/cli/cockpit.mjs" goals` exactly
+   as printed, in a code block, then the table, filled in:
 
    ```
    Your board is ready: <the address>
 
    | Where            | What                                                             |
    |------------------|------------------------------------------------------------------|
-   | On the board     | Read the plan. Answer the N questions under Needs you. Accept it. |
+   | On the board     | Read the goals. Answer the N questions under Needs you. Accept it. |
    | Leave to me      | Doing the cards and keeping the board up to date.                |
    | In this terminal | Nothing. Keep it open: the board talks to this session.          |
    ```
@@ -88,6 +94,8 @@ If the folder is empty, or they only want a look, stop after step 2 with the sta
 | `heartbeat` | `node "$P/src/cli/cockpit.mjs" heartbeat`. One tick of the session timer. A script decides, with no model, whether this tick does anything: it prints one line `SKIP: <reason>` (then do nothing more, and say nothing) or a numbered checklist (then follow it, see "The heartbeat"). `heartbeat --status` prints the settings and what the event log shows; it changes nothing |
 | `turn-end` | `node "$P/src/cli/cockpit.mjs" turn-end "<what happened>" --next "<what is next>" [--card ID]`. The last line of a turn: what is now true, and what comes next. Both are required. It ends with the batch step |
 | `push` | `node "$P/src/cli/cockpit.mjs" push`. It writes one batch file of every line not sent yet and prints the file and the highest line number. After the batch is sent, `push --sent <number>` records it. `say`, `ask`, `turn-end`, `next --start` and `inbox` already do the first half for you. In a project with no published board it prepares nothing and says so |
+| `goals` | `node "$P/src/cli/cockpit.mjs" goals [--brief]`. It prints the plan for the terminal: every goal with what it ends in and its tally, and each goal's cards under it (`--brief`: the goals only). Show its output as printed whenever the person asks what the plan is |
+| `clock` | `node "$P/src/cli/cockpit.mjs" clock [--days N]`. It reports, from what was logged, how fast the board and the agent reach each other: a click on the board until you took it, a line you logged until it was on the board, and a question until the owner answered it. Run it when the owner asks whether the board is live, and treat a slow second number as yours to fix: send each batch straight away |
 | `feed` | `node "$P/src/cli/cockpit.mjs" feed`. It writes the live rail (`live/feed`) and prints one batch file: send it with ArtifactData `batch`. `inbox` and `sync` already include this write in their batches |
 | `events` | `node "$P/src/cli/cockpit.mjs" events --follow` streams card moves and requests into the terminal as they happen. Run it with the Monitor tool so each event reaches you |
 

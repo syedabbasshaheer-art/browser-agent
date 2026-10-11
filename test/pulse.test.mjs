@@ -234,7 +234,7 @@ test("hook: with pulses off, or nothing edited by this session, the ten-minute r
 // every line so far is on the board, so the reminder to send is not what these calls are about
 const allSent = (dir) => fs.writeFileSync(path.join(P(dir).local, "pushed.json"), JSON.stringify({ last: lines(P(dir).events).length, have: [], pending: {} }));
 
-test("hook: lines logged and not sent for two minutes earn one reminder with the batch ready; a fresh line or a sent one earns none", () => {
+test("hook: lines logged and not sent for a minute earn one reminder with the batch ready; a fresh line or a sent one earns none", () => {
   let dir = project(BOARD, STARTED);
   writeLog(dir, [{ type: "card.moved", at: ago(9), card: "1.2", to: "START" }, { type: "claude.said", at: ago(4), card: "1.2", text: "Step one is done." }]);
   const bash = { hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "npm test" }, session_id: S };
@@ -244,8 +244,8 @@ test("hook: lines logged and not sent for two minutes earn one reminder with the
   assert.equal(context(hook(dir, "after-tool", bash)), "", "not twice in three minutes");
   rm(dir);
   dir = project(BOARD, STARTED);
-  writeLog(dir, [{ type: "card.moved", at: ago(1), card: "1.2", to: "START" }, { type: "claude.said", at: ago(1), card: "1.2", text: "x" }]);
-  assert.equal(hook(dir, "after-tool", bash).stdout, "", "a line one minute old is not late yet");
+  writeLog(dir, [{ type: "card.moved", at: ago(0.4), card: "1.2", to: "START" }, { type: "claude.said", at: ago(0.4), card: "1.2", text: "x" }]);
+  assert.equal(hook(dir, "after-tool", bash).stdout, "", "a line under a minute old is not late yet");
   rm(dir);
   dir = project(BOARD, STARTED);
   writeLog(dir, [{ type: "card.moved", at: ago(5), card: "1.2", to: "START" }, { type: "claude.said", at: ago(4), card: "1.2", text: "x" }]);

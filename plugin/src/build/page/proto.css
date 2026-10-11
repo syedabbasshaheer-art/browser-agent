@@ -1774,3 +1774,53 @@ textarea:focus-visible{border-color:var(--pri);box-shadow:0 0 0 1px var(--pri),v
 
 /* a reply the agent offered with a result: a quiet button after "Check it", never louder than it */
 .fitem .nextr{margin-left:6px;max-width:100%;white-space:normal;text-align:left}
+
+/* ── the owner's comments of 2026-10-11 ── */
+/* an answer's choices use the line's whole width, so a choice stays on one line */
+.lv .fitem>.qans{grid-column:1/-1}
+.qans .qchoice{white-space:nowrap}
+@media (max-width:699px){.qans .qchoice{white-space:normal}}
+/* the status line scrolls away with the page */
+.lvtop{position:static}
+.lvfeed>.lvside{top:8px}
+/* Live and Board: one look when chosen, one when not; the one not chosen is still plain to see */
+.tb-main button[aria-pressed="false"],.tb-views .tb-main .livetab[aria-pressed="false"]{color:var(--on-bar);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--on-bar) 36%,var(--bar)),color-mix(in srgb,var(--on-bar) 24%,var(--bar)));
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--on-bar) 55%,transparent),0 3px 0 rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.35)}
+.nstat{max-width:300px}
+.lfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 16px}
+.vfoot,.vrail{font:500 12px/16px var(--ui);color:var(--ink3)}
+
+/* the List: each goal a section, its cards under it */
+.viewhead .seg{flex:none}
+.gsecs{display:grid;gap:12px}
+.gsec{background:var(--s1);border-radius:var(--r-lg);box-shadow:var(--e2);min-width:0}
+.gsec.open{box-shadow:var(--e3)}
+.gsech{display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:12px 18px 12px 14px;text-align:left;border-radius:var(--r-lg);color:var(--ink)}
+.gsech:hover{background:var(--s2)}
+.gnum{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--pri);color:var(--on-pri);font:700 15px/1 var(--ui)}
+.gsec.fin .gnum{background:var(--dn)}
+.gtx{flex:1 1 auto;min-width:0;display:grid;gap:2px}
+.gtx b{font:700 17px/24px var(--ui);letter-spacing:-.01em}
+.gtx small{font:400 14px/20px var(--ui);color:var(--ink2);max-width:80ch}
+.gmeta{flex:none;font:600 13px/18px var(--ui);color:var(--ink2);white-space:nowrap}
+.gsec.fin .gmeta{color:var(--dn-fg,var(--dn))}
+.gchev{flex:none;width:9px;height:9px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(45deg);margin:0 4px 4px 2px;transition:transform var(--t-fast) var(--ease)}
+.gsec.open .gchev{transform:rotate(225deg);margin-bottom:-4px}
+.gcards{display:grid;padding:0 8px 10px}
+.grow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-height:44px;padding:8px 10px;border-radius:var(--r-md);cursor:pointer}
+.grow:hover{background:var(--s2)}
+.grow .t{flex:1 1 260px;min-width:0;font:500 15px/22px var(--ui);color:var(--ink)}
+.gwait{font:500 12.5px/18px var(--ui);color:var(--ink3);white-space:nowrap}
+@media (max-width:699px){.gsech{flex-wrap:wrap;gap:8px 12px;padding:12px}.gtx{flex-basis:calc(100% - 80px)}.gmeta{margin-left:48px}.gtx b{font-size:16px;line-height:22px}.grow .t{flex-basis:100%}}
+/* the Path is drawn on the page itself: no box, no inner height; it scrolls sideways only when it is wider than the page */
+.pathwrap{background:none;box-shadow:none;padding:0;border-radius:0}
+.pathbox{max-height:none;min-height:0;background:none;box-shadow:none;border-radius:0;padding:6px 0 18px}
+.pathhead .netkey{flex-basis:100%;margin:2px 0 0}
+.gsech .gchev{display:block;border-radius:0;background:none;border-left:0;border-top:0}
+.planbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;padding:14px 18px;border-radius:var(--r-lg);background:var(--warn-bg);color:var(--warn-fg);box-shadow:var(--e2)}
+.planbar p{flex:1 1 320px;min-width:0;font:500 15px/22px var(--ui)}
+.planbar .pbwhy{display:block;font-size:13.5px}
+@media (max-width:699px){.grow .t{flex-basis:calc(100% - 64px)}.planbar .btn{width:100%}}
+.gsech .gchev{transition:none;transform:rotate(45deg);margin:0 4px 4px 2px}
+.gsec.open .gsech .gchev{transform:rotate(-135deg);margin:4px 4px 0 2px}

@@ -1,6 +1,6 @@
 {
   "name": "browser-agent",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A browser cockpit for your project: a live board built from a markdown record, kept honest by hooks, and steerable from the browser. Drop a card on Start and Claude works it; nothing reaches Done unconfirmed.",
   "author": { "name": "Syed Abbas Shaheer", "url": "https://github.com/syedabbasshaheer-art" },
   "repository": "https://github.com/syedabbasshaheer-art/browser-agent",

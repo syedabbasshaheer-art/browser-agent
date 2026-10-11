@@ -325,15 +325,35 @@ function request(a,o){
 /* The doorbell. Says only what is known: saved, and whether a session could be rung. */
 var BELL="Run the cockpit inbox: export actions and approvals, apply, rebuild and republish this board.";
 function anchorEl(cardId){var el=(cardId&&document.querySelector('#canvas .card[data-id="'+cardId+'"]'))||$("needs");return el&&el.isConnected?el:document.body}
+/* Several requests in a few seconds ring once: the first rings at once, the ones that follow within RING_GAP wait
+   and go together. A busy doorbell (rate_limited) is tried again by the page, up to three times; the requests
+   are saved either way, so the owner has nothing to do. */
+var RING_GAP=8000,RING_AGAIN=[20,45,90],RING={t:null,last:0,n:0,card:"",text:"",tries:0};
 function ring(cardId,text){
   var later="it is applied when a session next runs the inbox.";
   if(!CAP.comments){snack("Saved. No session can be rung from this view; "+later);return}
+  RING.n++;RING.card=RING.n===1?(cardId||""):"";RING.text=RING.n===1?(text||""):"";
+  if(RING.t){snack("Saved. The agent is told about your "+RING.n+" requests together.",{mute:true});return}
+  var gap=nowMs()-RING.last;
+  if(gap>=RING_GAP){doRing();return}
+  RING.t=setTimeout(doRing,Math.max(1500,RING_GAP-gap));
+  snack("Saved. The agent is told in a few seconds.",{mute:true});
+}
+function doRing(){
+  var later="it is applied when a session next runs the inbox.",n=RING.n,cardId=RING.card,text=RING.text;
+  RING.t=null;RING.last=nowMs();
   CAP.comments.canSendToClaude().then(function(v){
     CAP.session=v;renderTop();
-    if(v!=="available"){snack("Saved. "+(v==="no_session"?"No session is watching right now; ":v==="writers_only"?"Only editors of this board can ring the agent; ":"Ringing the agent is off in this view; ")+later);return}
-    return CAP.comments.anchorFor(anchorEl(cardId)).then(function(anchor){return CAP.comments.sendToClaude({anchor:anchor,text:(text||"A card was moved on the board.")+" "+BELL})})
-      .then(function(){snack("Saved and sent to the agent. This page updates by itself.",{mute:true})});
-  }).catch(function(err){snack("Saved, but the agent could not be rung ("+((err&&err.code)||"error")+"). Use Ask the agent to apply, in the Inbox.",{bad:true,ms:6500})});
+    if(v!=="available"){RING.n=0;RING.tries=0;snack("Saved. "+(v==="no_session"?"No session is watching right now; ":v==="writers_only"?"Only editors of this board can ring the agent; ":"Ringing the agent is off in this view; ")+later);return}
+    return CAP.comments.anchorFor(anchorEl(cardId)).then(function(anchor){return CAP.comments.sendToClaude({anchor:anchor,text:(n>1?n+" requests were made on the board.":(text||"A card was moved on the board."))+" "+BELL})})
+      .then(function(){RING.n=Math.max(0,RING.n-n);RING.tries=0;snack("Saved and sent to the agent. This page updates by itself.",{mute:true})});
+  }).catch(function(err){
+    var code=(err&&err.code)||"error";
+    if(code==="rate_limited"&&RING.tries<RING_AGAIN.length){
+      var w=RING_AGAIN[RING.tries++];if(!RING.t)RING.t=setTimeout(doRing,w*1000);
+      snack("Saved. The agent's doorbell is busy, so this page rings again in "+w+" seconds. You need to do nothing.",{ms:6500});return}
+    RING.n=0;RING.tries=0;
+    snack("Saved, but the agent could not be rung ("+code+"). Use Ask the agent to apply, in the Inbox.",{bad:true,ms:6500})});
 }
 function wake(){
   if(!CAP.comments)return;
@@ -387,9 +407,8 @@ function drawNeeds(){
   ATTN=attnItems();
   var vis=ATTN.filter(function(x){return !S.dismissed[x.key]}),n=vis.length,draft=n&&vis[0].draft;
   NPILL=n;document.title=(n?"("+n+") ":"")+D.cfg.title;
-  var on=nowShort(),k=NOW.k,nrun=C.filter(function(c){return E.phase[c.id]==="START"}).length,sp=k==="working"?stepOf(NOW.prog):null,
-    run=nrun?nrun+" in progress"+(k==="working"&&NOW.card?" · "+NOW.card+(sp?" step "+sp.step+" of "+sp.of:""):""):"",
-    word=run||on||(n?"Waiting on you":"All clear"),sub=run&&on&&k!=="working"?on:"";
+  var on=nowShort(),k=NOW.k,nrun=C.filter(function(c){return E.phase[c.id]==="START"}).length,
+    word=on[0]||(nrun?nrun+" in progress":n?"Waiting on you":"All clear"),sub=on[1]+(on[0]&&n>1&&k==="waiting"?(on[1]?" · ":"")+(n-1)+" more for you":"");
   put($("needs"),'<button type="button" class="needsbtn'+(n?(draft?" isdraft":" has"):k==="working"?" on":k==="quiet"?" asleep":" calm")+'" data-state="'+k+'" data-act="needs" aria-expanded="'+S.attnOpen+'" aria-haspopup="dialog" aria-label="'+esc("Inbox"+(n?": "+n+" item"+(n>1?"s":"")+" need"+(n>1?"":"s")+" you":"")+". "+word)+'">'
     +ic(I.bell,18)+'<span class="nw"><b>Inbox</b></span>'+(n?'<span class="badge q">'+n+'</span>':"")+'</button>'
     +'<span class="nstat n-'+k+'" id="nstat" data-state="'+k+'" role="status"><i></i><span><b>'+esc(word)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':"")+'</span></span>');
@@ -622,11 +641,16 @@ function hold(fn){
   try{fn()}finally{HOLD=0}
   give(st);
 }
-/* Put a region's new content in place. On the 30-second timer this changes only what differs (the times, mostly),
-   node by node, so nothing else on the page is rebuilt; a part whose shape changed is replaced as a whole. */
+/* Put a region's new content in place. Every draw changes only what differs, node by node, so a click or a new
+   line never rebuilds (and blinks) the rest of the page; a part whose shape changed is replaced as a whole. */
 function put(el,html){
-  if(!MORPH){el.innerHTML=html;return}
   var t=document.createElement(el.tagName);t.innerHTML=html;morphKids(el,t);
+  /* a field that stayed in place starts again from what the page wrote; hold() gives back what was being typed */
+  if(!MORPH)[].forEach.call(el.querySelectorAll("input,textarea,select"),function(x){
+    if(x.tagName==="SELECT"){var o=x.querySelector("option[selected]")||x.options[0];if(o&&x.value!==o.value)x.value=o.value}
+    else if(x.type==="checkbox"||x.type==="radio"){if(x.checked!==x.hasAttribute("checked"))x.checked=x.hasAttribute("checked")}
+    else if(x.value!==x.defaultValue)x.value=x.defaultValue;
+  });
 }
 function morph(a,b){
   if(a.isEqualNode(b))return;
@@ -775,7 +799,7 @@ function renderRail(){
      return '<button class="ritem" data-act="goal" data-g="'+g.n+'" aria-current="'+(S.goal===g.n)+'" title="Goal '+g.n+": "+esc(g.title)+" · "+gs[1]+" · "+d+" of "+cs.length+' done"><span class="rnum'+(gs[0]==="DONE"?" alld":"")+'">'+g.n+'</span><span class="rtxt"><b>'+esc(g.title)+'</b></span><i class="gdot d-'+gs[0]+'"></i><span class="rcount">'+d+"/"+cs.length+'</span></button>'}).join("")
    +'<button class="ritem phoneonly" data-act="pop" data-p="filter"><span class="ricon">'+ic(I.filter)+'</span><span class="rtxt"><b>Filters</b></span></button>'
    +'<button class="ritem phoneonly" data-act="pop" data-p="demo"><span class="ricon">'+ic(I.tune)+'</span><span class="rtxt"><b>Display</b></span></button>'
-   +'<div class="railfoot">'+$("buildmeta").innerHTML+'</div>');
+   +'<div class="railfoot">'+$("buildmeta").innerHTML+'<span class="vrail">Version '+esc(BOARD.version||"")+'</span></div>');
 }
 /* ── one flow-chart drawing, used twice: the Path view draws every card; Do now draws the live slice.
    Nodes sit in columns (o.col) and bands (o.bandOf); a solid arrow is a real dependency. ── */
@@ -964,16 +988,39 @@ function pathHTML(){
    +'<div class="zoom" role="group" aria-label="Zoom the path"><button class="btn btn-text btn-xs" data-act="pfit" aria-pressed="'+S.pfit+'" title="Fit the whole width in the box">Fit</button>'
    +'<button class="ibtn sm" data-act="pzoom" data-d="-20" aria-label="Zoom out"'+dis(!S.pfit&&S.pz<=40)+'>'+ic(I.minus,16)+'</button><output>'+Math.round(z*100)+'%</output>'
    +'<button class="ibtn sm" data-act="pzoom" data-d="20" aria-label="Zoom in"'+dis(!S.pfit&&S.pz>=140)+'>'+ic(I.plus,16)+'</button></div>'
-   +'<p class="pathnote">'+ids.length+" of "+C.length+" cards, left to right in the order they must finish. Do now shows the live slice of this path.</p></div>"
-   +'<div class="pathbox" id="pathbox" tabindex="0" role="group" aria-label="Flow chart of the project. Scrolls both ways." data-x0="'+Math.round((X0+first*STEP-24)*z)+'"><div class="pzoom" style="zoom:'+z+'">'+ch.html+'</div></div>'
-   +'<p class="netkey">'+FLOWKEY+'<span><u class="kg"></u>Done</span></p></div>';
+   +'<p class="pathnote">'+ids.length+" of "+C.length+" cards, left to right in the order they must finish. Do now shows the live slice of this path.</p>"
+   +'<p class="netkey">'+FLOWKEY+'<span><u class="kg"></u>Done</span></p></div>'
+   +'<div class="pathbox" id="pathbox" tabindex="0" role="group" aria-label="Flow chart of the project. Scrolls both ways." data-x0="'+Math.round((X0+first*STEP-24)*z)+'"><div class="pzoom" style="zoom:'+z+'">'+ch.html+'</div></div></div>';
+}
+/* a goal on the List is open when the reader opened it; untouched, the first goal with work left is the open one */
+function goalOpen(n){
+  if(S.gopen&&S.gopen[n]!=null)return !!S.gopen[n];
+  var f=D.goals.filter(function(g){return C.some(function(c){return c.g===g.n&&E.phase[c.id]!=="DONE"})})[0];
+  return !!f&&f.n===n;
 }
 function listHTML(){
   var cs=C.filter(pass),k=S.sort.k,d=S.sort.d;
   var val={id:function(c){return c.id},title:function(c){return c.title.toLowerCase()},state:function(c){return ALLCOLS.indexOf(E.phase[c.id])},own:function(c){return c.own},eff:function(c){return "QSL".indexOf(c.eff)},frees:function(c){return E.unblocks[c.id]||0}}[k];
   cs.sort(function(a,b){var x=val(a),y=val(b);return k==="id"?a.id.localeCompare(b.id,"en",{numeric:true})*d:(x<y?-1:x>y?1:a.id.localeCompare(b.id,"en",{numeric:true}))*d});
   var th=function(key,l){return '<th scope="col" aria-sort="'+(k===key?(d>0?"ascending":"descending"):"none")+'"><button data-act="sort" data-k="'+key+'">'+l+(k===key?(d>0?" ↑":" ↓"):"")+'</button></th>'};
-  return '<div class="viewhead"><h2>All cards</h2><span class="chip mono">'+cs.length+" of "+C.length+'</span><p>Every card in one table, for searching and sorting.</p></div>'
+  var mode=S.lmode==="table"?"table":"goal",gs=D.goals.filter(function(g){return cs.some(function(c){return c.g===g.n})}),allOpen=gs.length&&gs.every(function(g){return goalOpen(g.n)});
+  var head='<div class="viewhead"><h2>The plan</h2><span class="chip mono">'+D.goals.length+" goal"+(D.goals.length===1?"":"s")+" · "+(cs.length===C.length?C.length:cs.length+" of "+C.length)+" cards"+'</span>'
+   +'<div class="seg sm" role="group" aria-label="How the cards are listed"><button data-act="set" data-k="lmode" data-val="goal" aria-pressed="'+(mode==="goal")+'">By goal</button><button data-act="set" data-k="lmode" data-val="table" aria-pressed="'+(mode==="table")+'">One table</button></div>'
+   +(mode==="goal"&&gs.length?'<button type="button" class="btn btn-text btn-sm" data-act="gall" data-v="'+(allOpen?"0":"1")+'" id="gall">'+(allOpen?"Close all goals":"Open all goals")+'</button>':"")
+   +'<button type="button" class="btn btn-tonal btn-sm" data-act="view" data-v="path" id="topath">'+ic(I.path,16)+'See it as a flow chart</button>'
+   +'<p>'+(mode==="goal"?"Each goal says what is true when it is reached. Open a goal to see its cards, in the order they are meant to happen.":"Every card in one table, for searching and sorting.")+'</p></div>'
+   +(isDraft()&&!isPlanning()?'<div class="planbar" id="planbar"><p><b>This plan is a draft.</b> Read the goals, open any card and add a note where it is wrong, then accept it. Nothing starts before that.'+(S.draftWhy?' <span class="pbwhy" role="status">'+esc(S.draftWhy)+'</span>':"")+'</p><button type="button" class="btn btn-filled" data-act="accept" id="acceptlist">'+ic(I.check,18)+'Accept plan</button></div>':"");
+  if(mode==="goal")return head+(gs.length?'<div class="gsecs" id="gsecs">'+gs.map(function(g){
+      var mine=cs.filter(function(c){return c.g===g.n}).sort(function(a,b){return a.id.localeCompare(b.id,"en",{numeric:true})}),all=C.filter(function(c){return c.g===g.n}),
+        dn=all.filter(function(c){return E.phase[c.id]==="DONE"}).length,run=all.filter(function(c){return E.phase[c.id]==="START"}).length,open=goalOpen(g.n),fin=all.length&&dn===all.length;
+      return '<section class="gsec'+(open?" open":"")+(fin?" fin":"")+'" id="lg-'+g.n+'" data-g="'+g.n+'"><button type="button" class="gsech" data-act="gtoggle" data-g="'+g.n+'" aria-expanded="'+open+'" aria-controls="lgc-'+g.n+'">'
+        +'<span class="gnum">'+g.n+'</span><span class="gtx"><b>'+esc(g.title)+'</b>'+(g.sub?'<small>'+esc(g.sub)+'</small>':"")+'</span>'
+        +'<span class="gmeta">'+(fin?"Done":dn+" of "+all.length+" done"+(run?" · "+run+" in progress":""))+'</span><i class="gchev" aria-hidden="true"></i></button>'
+        +(open?'<div class="gcards" id="lgc-'+g.n+'">'+mine.map(function(c){var o=openDeps(c);
+            return '<div class="grow row" data-act="open" data-id="'+esc(c.id)+'" tabindex="0" role="button" aria-label="'+esc("Card "+c.id+": "+c.title)+'"><span class="cid s-'+E.phase[c.id]+'">'+esc(c.id)+'</span><span class="t">'+esc(c.title)+'</span>'+chipState(E.phase[c.id])+chipOwn(c.own)+(o.length?'<span class="gwait">Waits on '+esc(o.join(", "))+'</span>':"")+'</div>'}).join("")+'</div>':"")
+        +'</section>'}).join("")+'</div>'
+    :'<div class="empty"><b>No cards match</b><p>Loosen a filter to see cards here.</p><button class="btn btn-tonal btn-sm" data-act="clearf">Clear filters</button></div>');
+  return head
    +(cs.length?'<div class="tablewrap"><table><thead><tr>'+th("id","Card")+th("title","Title")+th("state","Lane")+th("own","Owner")+th("frees","Frees")+'<th scope="col"><button aria-disabled="true" data-act="noop" title="This column cannot be sorted." style="cursor:default">Waits on</button></th></tr></thead><tbody>'
      +cs.map(function(c){var o=openDeps(c);return '<tr class="row" data-act="open" data-id="'+esc(c.id)+'" tabindex="0"><td><span class="cid s-'+E.phase[c.id]+'">'+esc(c.id)+'</span></td><td><span class="t">'+esc(c.title)+'</span></td><td>'+chipState(E.phase[c.id])+'</td><td>'+chipOwn(c.own)+'</td><td class="mono">'+(E.unblocks[c.id]||"")+'</td><td class="mono">'+esc(o.join(", "))+'</td></tr>'}).join("")
      +'</tbody></table></div><div class="lrows">'+cs.map(cardHTML).join("")+'</div>'
@@ -1192,12 +1239,15 @@ function runsBlock(){
 }
 /* the same state, short, for the pill beside the top bar */
 function nowShort(){
-  var st=NOW,sp;
-  if(st.k==="working"){sp=stepOf(st.prog);return "Agent is on "+st.card+(sp?" · step "+sp.step+" of "+sp.of:"")}
-  if(st.k==="quiet")return "No word for "+(st.mins<120?st.mins+" min":Math.floor(st.mins/60)+" h");
-  if(st.k==="no-session")return "No agent running";
-  if(st.k==="idle"&&st.start)return "A card is ready to start";
-  return "";
+  var st=NOW,sp,kd,T=function(id){return id&&byId[id]?byId[id].title:""};
+  if(isPlanning())return ["Writing your plan",""];
+  if(isDraft()&&st.k!=="working"&&st.k!=="quiet")return ["Accept the plan","Nothing starts before that"];
+  if(st.k==="working"){sp=stepOf(st.prog);return [st.card+" in progress"+(sp?" · step "+sp.step+" of "+sp.of:""),T(st.card)]}
+  if(st.k==="quiet")return [(st.card?st.card+": ":"")+"no word for "+(st.mins<120?st.mins+" min":Math.floor(st.mins/60)+" h"),T(st.card)];
+  if(st.k==="no-session")return ["No agent running",st.np?st.np+" request"+(st.np===1?" waits":"s wait"):""];
+  if(st.k==="waiting"&&st.need.card){kd=st.need.kind;return [(kd==="question"?"Answer ":kd==="check"?"Check ":kd==="approve"?"Approve ":"Your card: ")+st.need.card,T(st.need.card)]}
+  if(st.k==="idle"&&st.start)return ["Next: start "+st.start.card,T(st.start.card)];
+  return ["",""];
 }
 function feedFresh(){return NOW.k==="working"}
 function askLocked(){return !!(S.asked&&S.asked.at&&nowMs()-S.asked.at<600000&&nowMs()>=S.asked.at)}
@@ -1368,7 +1418,7 @@ function linesBlock(){
     +'<div class="lbody" id="lbody" tabindex="-1">'+""+(src==="req"?reqFeed():(today.length?part(today,"t"):'<p class="lnone">'+none+'</p>')
     +(old.length?'<h2 class="lvh2">Earlier</h2>'+part(old,"e"):""))+'</div>'
     +(L.length?'<p class="lupd">A line appears here when the agent sends it. The newest '+LINES_MAX+' are kept.</p>':"")
-    +'<p class="lfoot"><button type="button" class="tlink" data-act="view" data-v="settings" id="tosettings">How the agent works here</button></p></section>';
+    +'<p class="lfoot"><button type="button" class="tlink" data-act="view" data-v="settings" id="tosettings">How the agent works here</button><span class="vfoot" id="vfoot">Agent on Browser '+esc(BOARD.version||"")+'</span></p></section>';
 }
 /* what you asked for on this board, newest first, each with what came back */
 function reqFeed(){
@@ -1962,6 +2012,8 @@ document.addEventListener("click",function(e){
     case "gtile":if(S.goal===+d.g)return;S.goal=+d.g;break;
     case "needsclose":S.attnOpen=false;break;
     case "pathall":S.pathAll=d.v==="1";break;
+    case "gtoggle":S.gopen=S.gopen||{};S.gopen[+d.g]=!goalOpen(+d.g);break;
+    case "gall":S.gopen={};D.goals.forEach(function(g){S.gopen[g.n]=d.v==="1"});break;
     case "pfit":S.pfit=!S.pfit;break;
     case "pzoom":if(S.pfit){S.pfit=false;S.pz=100}else S.pz=Math.max(40,Math.min(140,S.pz+(+d.d)));break;
     case "decgoal":setView("dec");S.dgoal=+d.g;S.dkind="all";break;
@@ -2140,7 +2192,7 @@ window.__board={S:S,CAP:CAP,render:render,tick:tick,prog:progOf,V:function(){ret
   S.goal=ok(h)||ok(ss)||+V.views.all[0]||D.goals[0].n;
   /* the view: the one named in the address, else the one chosen earlier in this visit, else Live */
   var hv=String(location.hash).slice(1),sv2="";try{sv2=sessionStorage.getItem("lob.view")||""}catch(e){}
-  S.view=VIEW_OK[hv]?hv:h?"board":VIEW_OK[sv2]?sv2:"live"})();
+  S.view=VIEW_OK[hv]?hv:h?"board":VIEW_OK[sv2]?sv2:(BOARD.plan==="draft"&&!BOARD.planning?"list":"live")})();
 window.addEventListener("hashchange",function(){var v=String(location.hash).slice(1),g=(v.match(/^goal-?(\d+)$/)||[])[1];if(g){setGoal(+g);setView("board");S.scrollGoal=true;render()}else if(VIEW_OK[v]&&v!==S.view){setView(v);render()}});
 /* PENDTICK */setInterval(function(){try{if(allActs().some(function(a){return a.status==="pending"})&&!typingIn())render()}catch(e){}},10000);
 $("canvas").addEventListener("scroll",function(){if(S.view==="live")nyBar()},{passive:true});
